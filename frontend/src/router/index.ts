@@ -8,15 +8,22 @@ declare module 'vue-router' {
   }
 }
 
+import AppLayout from '../layout/AppLayout.vue'
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: () => import('../views/ProductsView.vue'), meta: { requiresAuth: true } },
     {
-      path: '/products/:id',
-      name: 'product-detail',
-      component: () => import('../views/ProductDetailView.vue'),
+      path: '/',
+      component: AppLayout,
       meta: { requiresAuth: true },
+      children: [
+        { path: '', name: 'dashboard', component: () => import('../views/DashboardView.vue') },
+        { path: 'products', name: 'products', component: () => import('../views/ProductsView.vue') },
+        { path: 'products/:id', name: 'product-detail', component: () => import('../views/ProductDetailView.vue') },
+        { path: 'watchlist', name: 'watchlist', component: () => import('../views/WatchlistView.vue') },
+        { path: 'alerts', name: 'alerts', component: () => import('../views/AlertsView.vue') },
+      ]
     },
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true } },
     {

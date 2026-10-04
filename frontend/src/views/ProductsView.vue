@@ -2,9 +2,9 @@
 import { onMounted, ref } from 'vue'
 import { ApiError } from '../api/client'
 import { listProducts, type Product } from '../api/products'
-import AppHeader from '../components/AppHeader.vue'
 import ProductCard from '../components/ProductCard.vue'
 import ProductFormModal from '../components/ProductFormModal.vue'
+import Button from 'primevue/button'
 
 const products = ref<Product[]>([])
 const loading = ref(true)
@@ -18,7 +18,7 @@ async function load() {
   try {
     products.value = await listProducts()
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'Erro inesperado'
+    error.value = e instanceof ApiError ? e.message : 'Unexpected error'
   } finally {
     loading.value = false
   }
@@ -54,32 +54,31 @@ onMounted(load)
 </script>
 
 <template>
-  <AppHeader />
-
-  <main class="app-main">
-    <div class="toolbar">
+  <div>
+    <div class="flex justify-between items-center mb-6">
       <div>
-        <h1>Meus produtos</h1>
-        <p class="subtitle">Produtos que você está monitorando.</p>
+        <h1 class="text-2xl font-bold m-0">Products</h1>
+        <p class="text-muted m-0 mt-1">Products you are currently tracking.</p>
       </div>
-      <button id="new-product" class="btn add" type="button" @click="openCreate">+ Novo produto</button>
+      <Button label="New Product" icon="pi pi-plus" @click="openCreate" />
     </div>
 
-    <div v-if="loading" id="products-loading" class="state" role="status">
-      <span class="spinner" aria-hidden="true"></span> Carregando produtos...
+    <div v-if="loading" class="flex flex-col items-center p-8 text-muted border border-dashed border-[var(--p-surface-700)] rounded-xl">
+      <i class="pi pi-spin pi-spinner text-2xl mb-2"></i>
+      <span>Loading products...</span>
     </div>
 
-    <div v-else-if="error" id="products-error" class="state" role="alert">
-      <p class="error">{{ error }}</p>
-      <button class="btn ghost" type="button" @click="load">Tentar novamente</button>
+    <div v-else-if="error" class="flex flex-col items-center p-8 text-red border border-dashed border-red-900 rounded-xl bg-red-950/20">
+      <p class="mb-4">{{ error }}</p>
+      <Button label="Try again" severity="secondary" @click="load" />
     </div>
 
-    <div v-else-if="products.length === 0" id="products-empty" class="state">
-      <p>Você ainda não monitora nenhum produto.</p>
-      <button class="btn add" type="button" @click="openCreate">Adicionar o primeiro</button>
+    <div v-else-if="products.length === 0" class="flex flex-col items-center p-8 text-muted border border-dashed border-[var(--p-surface-700)] rounded-xl">
+      <p class="mb-4">You are not monitoring any products yet.</p>
+      <Button label="Add your first product" icon="pi pi-plus" @click="openCreate" />
     </div>
 
-    <div v-else id="products-list" class="grid">
+    <div v-else class="grid">
       <ProductCard
         v-for="product in products"
         :key="product.id"
@@ -89,60 +88,15 @@ onMounted(load)
         @removed="onRemoved"
       />
     </div>
-  </main>
 
-  <ProductFormModal v-if="formOpen" :product="editing" @close="formOpen = false" @saved="onSaved" />
+    <ProductFormModal v-if="formOpen" :product="editing" @close="formOpen = false" @saved="onSaved" />
+  </div>
 </template>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-.toolbar h1 {
-  margin: 0 0 0.25rem;
-}
-.toolbar .subtitle {
-  margin: 0;
-}
-.btn.add {
-  width: auto;
-  margin: 0;
-  padding-inline: 1.25rem;
-}
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
-}
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 3rem 1rem;
-  color: var(--muted);
-  border: 1px dashed var(--border);
-  border-radius: 16px;
-}
-.spinner {
-  width: 1.2rem;
-  height: 1.2rem;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-#products-loading {
-  flex-direction: row;
-  justify-content: center;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  gap: 1.5rem;
 }
 </style>

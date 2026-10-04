@@ -11,6 +11,7 @@ export interface Product {
   /** Decimal como string, ex.: "1299.90" */
   currentPrice: string | null
   active: boolean
+  isFavorite: boolean
   createdAt: string
   updatedAt: string
   inStock: boolean | null

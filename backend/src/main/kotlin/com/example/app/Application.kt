@@ -10,6 +10,7 @@ import com.example.app.auth.configureErrorHandling
 import com.example.app.auth.configureSecurity
 import com.example.app.db.DatabaseFactory
 import com.example.app.product.productRoutes
+import com.example.app.product.dashboardRoutes
 import com.example.app.repository.AlertRepository
 import com.example.app.repository.ProductRepository
 import com.example.app.repository.PriceHistoryRepository
@@ -57,14 +58,16 @@ fun Application.module(
     val productRepository = ProductRepository()
     val historyRepository = PriceHistoryRepository()
     val alertRepository = AlertRepository()
-    val alertEvaluator = AlertEvaluator(alertRepository, userRepository, notifier)
-    val trackingService = PriceTrackingService(scrapers, productRepository, historyRepository, alertEvaluator)
+    val scrapeLogRepository = com.example.app.repository.ScrapeLogRepository()
+    val alertEvaluator = AlertEvaluator(alertRepository, userRepository, historyRepository, notifier)
+    val trackingService = PriceTrackingService(scrapers, productRepository, historyRepository, scrapeLogRepository, alertEvaluator)
 
     routing {
         get("/health") { call.respond(HealthResponse("ok")) }
         authRoutes(userRepository, jwtConfig)
         productRoutes(productRepository)
-        scrapingRoutes(productRepository, historyRepository, trackingService)
+        dashboardRoutes(productRepository, alertRepository)
+        scrapingRoutes(productRepository, historyRepository, trackingService, scrapeLogRepository)
         alertRoutes(alertRepository, productRepository)
     }
 

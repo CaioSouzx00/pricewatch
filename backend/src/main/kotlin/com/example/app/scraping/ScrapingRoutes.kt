@@ -5,6 +5,7 @@ import com.example.app.auth.JWT_AUTH
 import com.example.app.auth.userId
 import com.example.app.dto.PriceHistoryResponse
 import com.example.app.dto.ProductResponse
+import com.example.app.product.ProductAnalytics
 import com.example.app.repository.PriceHistoryRepository
 import com.example.app.repository.ProductRepository
 import io.ktor.http.*
@@ -17,6 +18,7 @@ fun Route.scrapingRoutes(
     products: ProductRepository,
     history: PriceHistoryRepository,
     service: PriceTrackingService,
+    scrapeLogs: com.example.app.repository.ScrapeLogRepository,
 ) {
     authenticate(JWT_AUTH) {
         fun ApplicationCall.ownedProduct(): ProductResponse {
@@ -42,6 +44,16 @@ fun Route.scrapingRoutes(
         get("/products/{id}/history") {
             val product = call.ownedProduct()
             call.respond<List<PriceHistoryResponse>>(history.listByProduct(product.id))
+        }
+
+        get("/products/{id}/analytics") {
+            val product = call.ownedProduct()
+            val historyList = history.listByProduct(product.id)
+            call.respond(ProductAnalytics.calculate(historyList, product.currentPrice))
+        }
+
+        get("/health") {
+            call.respond(scrapeLogs.getStats())
         }
     }
 }

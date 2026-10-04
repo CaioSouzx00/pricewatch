@@ -64,6 +64,7 @@ data class ProductResponse(
     val currency: String,
     val currentPrice: Money?,
     val active: Boolean,
+    val isFavorite: Boolean,
     val createdAt: Timestamp,
     val updatedAt: Timestamp,
     val inStock: Boolean? = null,
@@ -75,13 +76,14 @@ data class PriceHistoryResponse(val id: Long, val productId: Long, val price: Mo
 
 // ---------- Alerts ----------
 @Serializable
-enum class AlertType { PRICE_BELOW, PRICE_UP, STOCK_CHANGE }
+enum class AlertType { PRICE_BELOW, PRICE_UP, STOCK_CHANGE, PERCENTAGE_DROP, HISTORICAL_MIN }
 
 @Serializable
 data class AlertCreateRequest(
     val productId: Long,
     val type: AlertType = AlertType.PRICE_BELOW,
     val targetPrice: Money? = null,
+    val percentageDrop: Money? = null,
 )
 
 @Serializable
@@ -91,6 +93,7 @@ data class AlertResponse(
     val productId: Long,
     val type: AlertType,
     val targetPrice: Money?,
+    val percentageDrop: Money?,
     val active: Boolean,
     val triggeredAt: Timestamp?,
     val createdAt: Timestamp,

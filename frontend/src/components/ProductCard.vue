@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ApiError } from '../api/client'
+import { ApiError, api } from '../api/client'
 import { deleteProduct, refreshProduct, updateProduct, type Product } from '../api/products'
+import Card from 'primevue/card'
+import Button from 'primevue/button'
+import Tag from 'primevue/tag'
 
 const props = defineProps<{ product: Product }>()
 const emit = defineEmits<{ edit: [product: Product]; changed: [product: Product]; removed: [id: number] }>()
 
-const busy = ref<'refresh' | 'toggle' | 'delete' | null>(null)
+const busy = ref<'refresh' | 'toggle' | 'delete' | 'favorite' | null>(null)
 const error = ref('')
 
 const price = computed(() => {
   const p = props.product
-  if (p.currentPrice === null) return 'Sem preço ainda'
+  if (p.currentPrice === null) return 'No price yet'
   try {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: p.currency }).format(Number(p.currentPrice))
   } catch {
@@ -25,7 +28,7 @@ async function run(kind: NonNullable<typeof busy.value>, action: () => Promise<v
   try {
     await action()
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'Erro inesperado'
+    error.value = e instanceof ApiError ? e.message : 'Unexpected error'
   } finally {
     busy.value = null
   }
@@ -36,8 +39,14 @@ const refresh = () => run('refresh', async () => emit('changed', await refreshPr
 const toggle = () =>
   run('toggle', async () => emit('changed', await updateProduct(props.product.id, { active: !props.product.active })))
 
+const toggleFavorite = () => 
+  run('favorite', async () => {
+      const data = await api<Product>(`/products/${props.product.id}/favorite`, { method: 'PUT' })
+      emit('changed', data)
+  })
+
 const remove = () => {
-  if (!window.confirm(`Excluir "${props.product.name}"? O histórico de preços também será removido.`)) return
+  if (!window.confirm(`Delete "${props.product.name}"? Price history will also be removed.`)) return
   return run('delete', async () => {
     await deleteProduct(props.product.id)
     emit('removed', props.product.id)
@@ -46,130 +55,64 @@ const remove = () => {
 </script>
 
 <template>
-  <article class="card" :class="{ paused: !product.active }">
-    <header>
-      <h3>
-        <RouterLink :to="{ name: 'product-detail', params: { id: product.id } }" class="title-link">
-          {{ product.name }}
-        </RouterLink>
-      </h3>
-      <span v-if="product.store" class="badge">{{ product.store }}</span>
-    </header>
+  <Card :class="['product-card', { 'opacity-60': !product.active }]">
+    <template #title>
+        <div class="flex justify-between items-start gap-2">
+            <RouterLink :to="{ name: 'product-detail', params: { id: product.id } }" class="text-[var(--p-surface-0)] hover:text-green no-underline font-bold text-lg">
+                {{ product.name }}
+            </RouterLink>
+            <Button 
+                :icon="product.isFavorite ? 'pi pi-star-fill' : 'pi pi-star'" 
+                :class="product.isFavorite ? 'text-green' : 'text-muted'"
+                text rounded aria-label="Favorite" 
+                @click="toggleFavorite" 
+                :loading="busy === 'favorite'"
+                style="padding: 0; width: 2rem; height: 2rem; flex-shrink: 0;"
+            />
+        </div>
+    </template>
+    
+    <template #subtitle>
+        <div class="flex items-center gap-2 mt-1">
+            <Tag v-if="product.store" :value="product.store" severity="secondary" rounded />
+            <a :href="product.url" target="_blank" rel="noopener noreferrer" class="text-green text-sm hover:underline flex items-center gap-1">
+                Open Store <i class="pi pi-external-link" style="font-size: 0.7rem"></i>
+            </a>
+        </div>
+    </template>
 
-    <p class="price">{{ price }}</p>
-    <p class="meta">
-      <span v-if="product.inStock !== null" :class="product.inStock ? 'ok' : 'out'">
-        {{ product.inStock ? 'Em estoque' : 'Sem estoque' }}
-      </span>
-      <span v-if="!product.active" class="out">Monitoramento pausado</span>
-    </p>
-    <a :href="product.url" target="_blank" rel="noopener noreferrer" class="link">Abrir na loja ↗</a>
+    <template #content>
+        <div class="text-3xl font-bold mt-2 mb-4">{{ price }}</div>
+        
+        <div class="flex gap-2 text-sm">
+            <span v-if="product.inStock !== null" :class="product.inStock ? 'text-green' : 'text-red'">
+                <i :class="product.inStock ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+                {{ product.inStock ? 'In Stock' : 'Out of Stock' }}
+            </span>
+            <span v-if="!product.active" class="text-red">
+                <i class="pi pi-pause-circle"></i> Paused
+            </span>
+        </div>
+        
+        <p v-if="error" class="text-red text-sm mt-2">{{ error }}</p>
+    </template>
 
-    <p v-if="error" class="error" role="alert">{{ error }}</p>
-
-    <footer>
-      <button class="btn ghost" type="button" :disabled="busy !== null" @click="refresh">
-        {{ busy === 'refresh' ? 'Atualizando...' : 'Atualizar preço' }}
-      </button>
-      <button class="btn ghost" type="button" :disabled="busy !== null" @click="toggle">
-        {{ product.active ? 'Pausar' : 'Retomar' }}
-      </button>
-      <button class="btn ghost" type="button" :disabled="busy !== null" @click="emit('edit', product)">Editar</button>
-      <button class="btn ghost danger" type="button" :disabled="busy !== null" @click="remove">
-        {{ busy === 'delete' ? 'Excluindo...' : 'Excluir' }}
-      </button>
-    </footer>
-  </article>
+    <template #footer>
+        <div class="flex gap-2 flex-wrap">
+            <Button icon="pi pi-refresh" label="Refresh" size="small" severity="secondary" :loading="busy === 'refresh'" @click="refresh" />
+            <Button :icon="product.active ? 'pi pi-pause' : 'pi pi-play'" :label="product.active ? 'Pause' : 'Resume'" size="small" severity="secondary" :loading="busy === 'toggle'" @click="toggle" />
+            <Button icon="pi pi-pencil" label="Edit" size="small" severity="secondary" @click="emit('edit', product)" :disabled="busy !== null" />
+            <Button icon="pi pi-trash" label="Delete" size="small" severity="danger" text :loading="busy === 'delete'" @click="remove" />
+        </div>
+    </template>
+  </Card>
 </template>
 
 <style scoped>
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface);
-  backdrop-filter: blur(12px);
-  transition:
-    transform 0.2s,
-    border-color 0.2s;
+.product-card {
+    transition: transform 0.2s;
 }
-.card:hover {
-  transform: translateY(-3px);
-  border-color: hsla(258, 90%, 70%, 0.5);
-}
-.card.paused {
-  opacity: 0.7;
-}
-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-h3 {
-  margin: 0;
-  font-size: 1rem;
-  overflow-wrap: anywhere;
-}
-.title-link {
-  color: inherit;
-  text-decoration: none;
-}
-.title-link:hover {
-  color: var(--accent-2);
-}
-.badge {
-  flex-shrink: 0;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  background: hsla(190, 90%, 55%, 0.15);
-  color: var(--accent-2);
-}
-.price {
-  margin: 0.4rem 0 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-.meta {
-  display: flex;
-  gap: 0.75rem;
-  margin: 0;
-  font-size: 0.82rem;
-}
-.ok {
-  color: hsl(150, 70%, 60%);
-}
-.out {
-  color: var(--danger);
-}
-.link {
-  font-size: 0.85rem;
-  color: var(--accent-2);
-  text-decoration: none;
-}
-.link:hover {
-  text-decoration: underline;
-}
-footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-footer .btn {
-  padding: 0.45rem 0.8rem;
-  font-size: 0.82rem;
-}
-.btn.danger:hover:not(:disabled) {
-  border-color: var(--danger);
-  color: var(--danger);
-  box-shadow: none;
-}
-.error {
-  margin: 0.5rem 0 0;
+.product-card:hover {
+    transform: translateY(-2px);
 }
 </style>

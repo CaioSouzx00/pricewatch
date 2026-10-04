@@ -11,6 +11,7 @@ class PriceTrackingService(
     private val scrapers: List<PriceScraper>,
     private val products: ProductRepository,
     private val history: PriceHistoryRepository,
+    private val scrapeLogs: com.example.app.repository.ScrapeLogRepository? = null,
     private val alertEvaluator: AlertEvaluator? = null,
 ) {
     private val log = LoggerFactory.getLogger(PriceTrackingService::class.java)
@@ -41,16 +42,20 @@ class PriceTrackingService(
         var failed = 0
         var skipped = 0
         for ((index, product) in active.withIndex()) {
+            val start = System.currentTimeMillis()
             try {
                 refresh(product)
+                scrapeLogs?.add(product.id, true, null, (System.currentTimeMillis() - start).toInt())
                 ok++
             } catch (e: ScrapeException.Blocked) {
                 log.warn("Bloqueio detectado; interrompendo lote: {}", e.message)
+                scrapeLogs?.add(product.id, false, e.message, (System.currentTimeMillis() - start).toInt())
                 failed++
                 skipped = active.size - index - 1
                 break
             } catch (e: ScrapeException) {
                 log.warn("Falha ao atualizar produto {}: {}", product.id, e.message)
+                scrapeLogs?.add(product.id, false, e.message, (System.currentTimeMillis() - start).toInt())
                 failed++
             }
         }

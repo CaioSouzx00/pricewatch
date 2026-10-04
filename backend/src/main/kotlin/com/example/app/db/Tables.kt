@@ -21,6 +21,7 @@ object ProductsTable : LongIdTable("products") {
     val currentPrice = decimal("current_price", 12, 2).nullable()
     val inStock = bool("in_stock").nullable()
     val active = bool("active").default(true)
+    val isFavorite = bool("is_favorite").default(false)
     val createdAt = timestamp("created_at").clientDefault { Instant.now() }
     val updatedAt = timestamp("updated_at").clientDefault { Instant.now() }
 }
@@ -36,7 +37,16 @@ object AlertsTable : LongIdTable("alerts") {
     val productId = reference("product_id", ProductsTable)
     val type = varchar("type", 20).default("PRICE_BELOW")
     val targetPrice = decimal("target_price", 12, 2).nullable()
+    val percentageDrop = decimal("percentage_drop", 5, 2).nullable()
     val active = bool("active").default(true)
     val triggeredAt = timestamp("triggered_at").nullable()
+    val createdAt = timestamp("created_at").clientDefault { Instant.now() }
+}
+
+object ScrapeLogsTable : LongIdTable("scrape_logs") {
+    val productId = reference("product_id", ProductsTable)
+    val success = bool("success")
+    val errorMessage = text("error_message").nullable()
+    val latencyMs = integer("latency_ms").nullable()
     val createdAt = timestamp("created_at").clientDefault { Instant.now() }
 }

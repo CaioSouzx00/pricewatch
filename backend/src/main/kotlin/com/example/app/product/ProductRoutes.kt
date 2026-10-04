@@ -84,6 +84,13 @@ fun Route.productRoutes(products: ProductRepository) {
                 products.delete(existing.id)
                 call.respond(HttpStatusCode.NoContent)
             }
+
+            put("/{id}/favorite") {
+                val existing = products.findOwned(call)
+                val updated = products.toggleFavorite(existing.id)
+                    ?: throw ApiException(HttpStatusCode.NotFound, "Produto não encontrado")
+                call.respond(updated)
+            }
         }
     }
 }

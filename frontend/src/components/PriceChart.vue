@@ -36,8 +36,8 @@ function render() {
   chart?.destroy()
   const ctx = canvas.value.getContext('2d')!
   const gradient = ctx.createLinearGradient(0, 0, 0, 300)
-  gradient.addColorStop(0, 'rgba(139, 92, 246, 0.45)')
-  gradient.addColorStop(1, 'rgba(139, 92, 246, 0)')
+  gradient.addColorStop(0, 'rgba(16, 185, 129, 0.45)')
+  gradient.addColorStop(1, 'rgba(16, 185, 129, 0)')
 
   chart = new Chart(canvas.value, {
     type: 'line',
@@ -46,7 +46,7 @@ function render() {
       datasets: [
         {
           data: values,
-          borderColor: '#8b5cf6',
+          borderColor: '#10b981',
           backgroundColor: gradient,
           fill: true,
           tension: 0.3,

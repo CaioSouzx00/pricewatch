@@ -2,6 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { ApiError } from '../api/client'
 import { createProduct, updateProduct, type Product } from '../api/products'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
 
 const props = defineProps<{ product: Product | null }>()
 const emit = defineEmits<{ close: []; saved: [product: Product] }>()
@@ -12,6 +16,7 @@ const price = ref('')
 const currency = ref('BRL')
 const error = ref('')
 const saving = ref(false)
+const visible = ref(true)
 
 const isEdit = computed(() => props.product !== null)
 
@@ -23,6 +28,7 @@ watch(
     price.value = p?.currentPrice ?? ''
     currency.value = p?.currency ?? 'BRL'
     error.value = ''
+    visible.value = true
   },
   { immediate: true },
 )
@@ -42,88 +48,65 @@ async function submit() {
     }
     const saved = props.product ? await updateProduct(props.product.id, input) : await createProduct(input)
     emit('saved', saved)
+    visible.value = false
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'Erro inesperado'
+    error.value = e instanceof ApiError ? e.message : 'Unexpected error'
   } finally {
     saving.value = false
   }
 }
+
+function onHide() {
+    emit('close')
+}
 </script>
 
 <template>
-  <div class="overlay" @mousedown.self="emit('close')" @keydown.esc="emit('close')">
-    <section class="auth-card modal" role="dialog" aria-modal="true" aria-labelledby="product-form-title">
-      <h2 id="product-form-title">{{ isEdit ? 'Editar produto' : 'Novo produto' }}</h2>
+  <Dialog v-model:visible="visible" modal :header="isEdit ? 'Edit Product' : 'Add Product'" :style="{ width: '400px' }" @hide="onHide">
+    <form @submit.prevent="submit" novalidate class="flex flex-col gap-4 mt-2">
+      <Message v-if="error" severity="error" :closable="false" class="m-0">{{ error }}</Message>
 
-      <form @submit.prevent="submit" novalidate>
-        <p v-if="error" id="product-form-error" class="error" role="alert">{{ error }}</p>
+      <div class="flex flex-col gap-2">
+        <label for="product-name" class="text-sm font-semibold">Name</label>
+        <InputText id="product-name" v-model="name" type="text" maxlength="255" required autofocus placeholder="e.g. iPhone 15 Pro" class="w-full" />
+      </div>
+      
+      <div class="flex flex-col gap-2">
+        <label for="product-url" class="text-sm font-semibold">Product URL</label>
+        <InputText id="product-url" v-model="url" type="url" placeholder="https://..." required class="w-full" />
+      </div>
+      
+      <div class="flex gap-4">
+        <div class="flex flex-col gap-2 flex-grow">
+          <label for="product-price" class="text-sm font-semibold">Current Price (Optional)</label>
+          <InputText id="product-price" v-model="price" type="text" inputmode="decimal" placeholder="0.00" class="w-full" />
+        </div>
+        <div class="flex flex-col gap-2 w-24">
+          <label for="product-currency" class="text-sm font-semibold">Currency</label>
+          <InputText id="product-currency" v-model="currency" type="text" maxlength="3" class="w-full" />
+        </div>
+      </div>
 
-        <div class="field">
-          <label for="product-name">Nome</label>
-          <input id="product-name" v-model="name" type="text" maxlength="255" required autofocus />
-        </div>
-        <div class="field">
-          <label for="product-url">URL do produto</label>
-          <input id="product-url" v-model="url" type="url" placeholder="https://produto.mercadolivre.com.br/..." required />
-        </div>
-        <div class="row">
-          <div class="field grow">
-            <label for="product-price">Preço atual (opcional)</label>
-            <input id="product-price" v-model="price" type="text" inputmode="decimal" placeholder="0,00" />
-          </div>
-          <div class="field currency">
-            <label for="product-currency">Moeda</label>
-            <input id="product-currency" v-model="currency" type="text" maxlength="3" />
-          </div>
-        </div>
-
-        <div class="actions">
-          <button id="product-cancel" class="btn ghost" type="button" @click="emit('close')">Cancelar</button>
-          <button id="product-save" class="btn save" type="submit" :disabled="!canSubmit">
-            {{ saving ? 'Salvando...' : 'Salvar' }}
-          </button>
-        </div>
-      </form>
-    </section>
-  </div>
+      <div class="flex justify-end gap-2 mt-4">
+        <Button label="Cancel" severity="secondary" text @click="visible = false" />
+        <Button type="submit" :label="saving ? 'Saving...' : 'Save'" :loading="saving" :disabled="!canSubmit" />
+      </div>
+    </form>
+  </Dialog>
 </template>
 
 <style scoped>
-.overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  background: hsla(232, 50%, 3%, 0.7);
-  backdrop-filter: blur(4px);
-}
-.modal {
-  max-width: 480px;
-}
-.modal h2 {
-  margin: 0 0 1.25rem;
-}
-.row {
-  display: flex;
-  gap: 0.75rem;
-}
-.grow {
-  flex: 1;
-}
-.currency {
-  width: 90px;
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-.btn.save {
-  width: auto;
-  margin: 0;
-  padding-inline: 1.5rem;
-}
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.gap-2 { gap: 0.5rem; }
+.gap-4 { gap: 1rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.m-0 { margin: 0; }
+.w-full { width: 100%; }
+.w-24 { width: 6rem; }
+.flex-grow { flex-grow: 1; }
+.justify-end { justify-content: flex-end; }
+.text-sm { font-size: 0.875rem; }
+.font-semibold { font-weight: 600; }
 </style>

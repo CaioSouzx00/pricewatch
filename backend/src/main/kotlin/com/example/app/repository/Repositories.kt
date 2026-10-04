@@ -13,13 +13,13 @@ fun UserEntity.toDto() = UserResponse(id.value, email, name, createdAt)
 
 fun ProductEntity.toDto() = ProductResponse(
     id.value, user.id.value, name, url, store, imageUrl, currency,
-    currentPrice, active, createdAt, updatedAt, inStock,
+    currentPrice, active, isFavorite, createdAt, updatedAt, inStock,
 )
 
 fun PriceHistoryEntity.toDto() = PriceHistoryResponse(id.value, product.id.value, price, checkedAt)
 
 fun AlertEntity.toDto() = AlertResponse(
-    id.value, user.id.value, product.id.value, AlertType.valueOf(type), targetPrice, active, triggeredAt, createdAt,
+    id.value, user.id.value, product.id.value, AlertType.valueOf(type), targetPrice, percentageDrop, active, triggeredAt, createdAt,
 )
 
 class UserRepository {
@@ -91,6 +91,13 @@ class ProductRepository {
     }
 
     fun delete(id: Long): Boolean = transaction { ProductEntity.findById(id)?.delete() != null }
+    
+    fun toggleFavorite(id: Long): ProductResponse? = transaction {
+        ProductEntity.findById(id)?.apply {
+            isFavorite = !isFavorite
+            updatedAt = Instant.now()
+        }?.toDto()
+    }
 }
 
 class PriceHistoryRepository {
@@ -116,6 +123,7 @@ class AlertRepository {
             product = ProductEntity[request.productId]
             type = request.type.name
             targetPrice = request.targetPrice
+            percentageDrop = request.percentageDrop
         }.toDto()
     }
 
@@ -142,4 +150,33 @@ class AlertRepository {
     }
 
     fun delete(id: Long): Boolean = transaction { AlertEntity.findById(id)?.delete() != null }
+}
+
+class ScrapeLogRepository {
+    fun add(productId: Long, success: Boolean, errorMessage: String?, latencyMs: Int? = null) = transaction {
+        ScrapeLogEntity.new {
+            this.product = ProductEntity[productId]
+            this.success = success
+            this.errorMessage = errorMessage
+            this.latencyMs = latencyMs
+        }
+    }
+
+    fun getStats(): Map<String, Any> = transaction {
+        val total = ScrapeLogEntity.count()
+        val successCount = ScrapeLogEntity.find { ScrapeLogsTable.success eq true }.count()
+        val failedCount = total - successCount
+        
+        // Simple average latency in DB using exposed is a bit complex without raw SQL,
+        // so we'll just pull the last 100 and average in memory to avoid raw sql issues
+        val recentLogs = ScrapeLogEntity.all().limit(100).toList()
+        val avgLatency = if (recentLogs.isNotEmpty()) recentLogs.mapNotNull { it.latencyMs }.average() else 0.0
+        
+        mapOf(
+            "total" to total,
+            "successCount" to successCount,
+            "failedCount" to failedCount,
+            "averageLatencyMs" to avgLatency
+        )
+    }
 }

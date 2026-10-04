@@ -25,6 +25,7 @@ class ProductEntity(id: EntityID<Long>) : LongEntity(id) {
     var currentPrice by ProductsTable.currentPrice
     var inStock by ProductsTable.inStock
     var active by ProductsTable.active
+    var isFavorite by ProductsTable.isFavorite
     var createdAt by ProductsTable.createdAt
     var updatedAt by ProductsTable.updatedAt
 }
@@ -44,7 +45,18 @@ class AlertEntity(id: EntityID<Long>) : LongEntity(id) {
     var product by ProductEntity referencedOn AlertsTable.productId
     var type by AlertsTable.type
     var targetPrice by AlertsTable.targetPrice
+    var percentageDrop by AlertsTable.percentageDrop
     var active by AlertsTable.active
     var triggeredAt by AlertsTable.triggeredAt
     var createdAt by AlertsTable.createdAt
+}
+
+class ScrapeLogEntity(id: EntityID<Long>) : LongEntity(id) {
+    companion object : LongEntityClass<ScrapeLogEntity>(ScrapeLogsTable)
+
+    var product by ProductEntity referencedOn ScrapeLogsTable.productId
+    var success by ScrapeLogsTable.success
+    var errorMessage by ScrapeLogsTable.errorMessage
+    var latencyMs by ScrapeLogsTable.latencyMs
+    var createdAt by ScrapeLogsTable.createdAt
 }
