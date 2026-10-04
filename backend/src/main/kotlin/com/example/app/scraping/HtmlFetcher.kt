@@ -1,15 +1,15 @@
 package com.example.app.scraping
 
-import it.skrape.core.htmlDocument
-import it.skrape.fetcher.HttpFetcher
-import it.skrape.fetcher.response
-import it.skrape.fetcher.skrape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
+import java.time.Duration
 
 interface HtmlFetcher {
     /** Retorna o corpo HTML ou lança [ScrapeException]. */
@@ -28,7 +28,7 @@ class RateLimiter(private val minIntervalMs: Long = 2_000) {
     }
 }
 
-class SkrapeHtmlFetcher(
+class HttpHtmlFetcher(
     private val rateLimiter: RateLimiter = RateLimiter(),
     private val userAgent: String = System.getenv("SCRAPER_USER_AGENT")?.takeIf { it.isNotBlank() } ?: DEFAULT_USER_AGENT,
     private val timeoutMs: Int = 15_000,
@@ -57,24 +57,29 @@ class SkrapeHtmlFetcher(
     }
 
     private suspend fun request(url: String): String = withContext(Dispatchers.IO) {
-        val (code, body) = try {
-            skrape(HttpFetcher) {
-                request {
-                    this.url = url
-                    userAgent = this@SkrapeHtmlFetcher.userAgent
-                    timeout = timeoutMs
-                    headers = mapOf("Accept-Language" to "pt-BR,pt;q=0.9")
-                }
-                response { status { code } to responseBody }
-            }
+        val client = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(Duration.ofMillis(timeoutMs.toLong()))
+            .build()
+        val req = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("User-Agent", userAgent)
+            .header("Accept-Language", "pt-BR,pt;q=0.9")
+            .timeout(Duration.ofMillis(timeoutMs.toLong()))
+            .GET()
+            .build()
+
+        val response = try {
+            client.send(req, HttpResponse.BodyHandlers.ofString())
         } catch (e: Exception) {
             throw ScrapeException.Network("Erro de rede: ${e.message}", e)
         }
+        val code = response.statusCode()
         when {
             code == 429 || code == 403 -> throw ScrapeException.Blocked("Bloqueado pelo site (HTTP $code)")
             code >= 500 -> throw ScrapeException.Network("Erro do servidor (HTTP $code)")
             code !in 200..299 -> throw ScrapeException.Parse("Resposta inesperada (HTTP $code)")
-            else -> body
+            else -> response.body()
         }
     }
 

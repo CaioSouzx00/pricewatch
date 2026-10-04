@@ -28,7 +28,7 @@ PriceWatch is a self-hosted, full-stack price intelligence platform designed to 
 | **Backend** | Kotlin + Ktor | High-performance, asynchronous REST API |
 | **Database** | PostgreSQL | Relational persistent storage |
 | **ORM & Migrations** | Exposed + Flyway | Type-safe SQL DSL and schema versioning |
-| **Scraping** | SkrapeIt + Jsoup | HTML parsing and DOM traversal |
+| **Scraping** | HttpClient + Jsoup | HTML fetching, parsing and DOM traversal |
 | **Frontend** | Vue 3 + TypeScript | Reactive single-page application |
 | **Visualization** | Chart.js | Historical data visualization |
 | **Infrastructure** | Docker + Docker Compose | Containerized local environment |
@@ -159,7 +159,7 @@ The application exposes a RESTful API. Most endpoints require a valid JWT `Autho
 The scraping module is designed with an interface-driven approach (`PriceScraper`), allowing easy extension for new marketplaces.
 
 - **Current Implementation:** Mercado Livre.
-- **Mechanism:** Fetches raw HTML and uses **SkrapeIt** and **Jsoup** for DOM traversal.
+- **Mechanism:** Fetches raw HTML via standard `HttpClient` and uses **Jsoup** for DOM traversal.
 - **Robustness:** Handles missing nodes, dynamic CSS selectors variations, and validates parsed currencies and stock statuses before persisting.
 
 ## Notifications

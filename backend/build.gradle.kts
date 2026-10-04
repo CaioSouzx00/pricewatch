@@ -39,7 +39,6 @@ dependencies {
     implementation("org.flywaydb:flyway-core:10.17.3")
     implementation("org.flywaydb:flyway-database-postgresql:10.17.3")
 
-    implementation("it.skrape:skrapeit:1.2.2")
     implementation("org.jsoup:jsoup:1.18.1")
 
     implementation("ch.qos.logback:logback-classic:1.5.8")

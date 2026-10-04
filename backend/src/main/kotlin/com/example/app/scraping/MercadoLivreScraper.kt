@@ -2,7 +2,7 @@ package com.example.app.scraping
 
 import java.net.URI
 
-class MercadoLivreScraper(private val fetcher: HtmlFetcher = SkrapeHtmlFetcher()) : PriceScraper {
+class MercadoLivreScraper(private val fetcher: HtmlFetcher = HttpHtmlFetcher()) : PriceScraper {
     override val store = "Mercado Livre"
 
     override fun supports(url: String): Boolean {
