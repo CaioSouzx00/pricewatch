@@ -43,8 +43,8 @@ function logout() {
   <div class="layout-wrapper">
     <div class="layout-sidebar">
       <div class="flex items-center p-4 gap-2 border-b border-[var(--p-surface-800)]" style="height: 64px;">
-        <i class="pi pi-chart-line text-green" style="font-size: 1.5rem"></i>
-        <span class="font-bold text-xl">PriceWatch</span>
+        <i class="pi pi-bullseye text-green" style="font-size: 1.5rem"></i>
+        <span class="font-bold text-xl">DealRadar</span>
       </div>
       <div class="p-2" style="flex-grow: 1;">
         <Menu :model="items" class="w-full" style="background: transparent; border: none;" />

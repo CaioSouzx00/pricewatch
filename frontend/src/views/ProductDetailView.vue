@@ -8,6 +8,10 @@ import { formatMoney } from '../utils/stats'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
+import InputNumber from 'primevue/inputnumber'
+import Message from 'primevue/message'
 
 const route = useRoute()
 const id = Number(route.params.id)
@@ -23,6 +27,18 @@ const money = (v: number | string | null | undefined) => {
     if (v == null) return '—'
     return formatMoney(Number(v), currency.value)
 }
+
+const buyScore = computed(() => {
+    if (!product.value || !analytics.value || !product.value.currentPrice) return null
+    const price = Number(product.value.currentPrice)
+    const min = Number(analytics.value.minPrice)
+    const avg = Number(analytics.value.averagePrice)
+    
+    if (price <= min * 1.02) return { label: 'Great Deal', severity: 'success', icon: 'pi pi-verified' }
+    if (price < avg) return { label: 'Good Price', severity: 'info', icon: 'pi pi-thumbs-up' }
+    if (price > avg * 1.05) return { label: 'Expensive', severity: 'danger', icon: 'pi pi-exclamation-triangle' }
+    return { label: 'Fair Price', severity: 'secondary', icon: 'pi pi-minus' }
+})
 
 async function load() {
   loading.value = true
@@ -42,6 +58,40 @@ async function load() {
   } finally {
     loading.value = false
   }
+}
+
+const showDialog = ref(false)
+const alertForm = ref({ type: 'PRICE_BELOW', targetPrice: null as number | null, percentageDrop: null as number | null })
+const alertError = ref('')
+const alertLoading = ref(false)
+
+const alertTypes = [
+    { label: 'Target Price', value: 'PRICE_BELOW' },
+    { label: 'Price Increase', value: 'PRICE_UP' },
+    { label: 'Back in Stock', value: 'STOCK_CHANGE' },
+    { label: 'Percentage Drop', value: 'PERCENTAGE_DROP' },
+    { label: 'Historical Minimum', value: 'HISTORICAL_MIN' }
+]
+
+async function submitAlert() {
+    alertError.value = ''
+    alertLoading.value = true
+    try {
+        await api('/alerts', {
+            method: 'POST',
+            body: JSON.stringify({
+                productId: id,
+                type: alertForm.value.type,
+                targetPrice: alertForm.value.targetPrice,
+                percentageDrop: alertForm.value.percentageDrop
+            })
+        })
+        showDialog.value = false
+    } catch (e) {
+        alertError.value = e instanceof ApiError ? e.message : 'Failed to create alert'
+    } finally {
+        alertLoading.value = false
+    }
 }
 
 onMounted(load)
@@ -67,9 +117,13 @@ onMounted(load)
       <div class="flex flex-wrap items-center gap-4 mb-6 mt-2">
         <h1 class="text-2xl font-bold m-0">{{ product.name }}</h1>
         <Tag v-if="product.store" :value="product.store" severity="secondary" rounded />
-        <a :href="product.url" target="_blank" rel="noopener noreferrer" class="text-green text-sm hover:underline ml-auto flex items-center gap-1">
-          Open in Store <i class="pi pi-external-link text-xs"></i>
-        </a>
+        <Tag v-if="buyScore" :value="buyScore.label" :severity="buyScore.severity" :icon="buyScore.icon" rounded />
+        <div class="ml-auto flex items-center gap-3">
+          <Button icon="pi pi-bell" label="Add Alert" size="small" @click="showDialog = true" />
+          <a :href="product.url" target="_blank" rel="noopener noreferrer" class="text-green text-sm hover:underline flex items-center gap-1">
+            Open in Store <i class="pi pi-external-link text-xs"></i>
+          </a>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -140,6 +194,28 @@ onMounted(load)
           </div>
         </template>
       </Card>
+
+      <Dialog v-model:visible="showDialog" modal header="Create Alert" :style="{ width: '400px' }">
+        <div class="flex flex-col gap-4 mt-2">
+          <Message v-if="alertError" severity="error" :closable="false">{{ alertError }}</Message>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-bold">Alert Rule</label>
+            <Select v-model="alertForm.type" :options="alertTypes" optionLabel="label" optionValue="value" class="w-full" />
+          </div>
+          <div class="flex flex-col gap-2" v-if="alertForm.type === 'PRICE_BELOW' || alertForm.type === 'PRICE_UP'">
+            <label class="text-sm font-bold">Target Price</label>
+            <InputNumber v-model="alertForm.targetPrice" mode="currency" :currency="currency" locale="pt-BR" class="w-full" />
+          </div>
+          <div class="flex flex-col gap-2" v-if="alertForm.type === 'PERCENTAGE_DROP'">
+            <label class="text-sm font-bold">Percentage Drop (%)</label>
+            <InputNumber v-model="alertForm.percentageDrop" suffix="%" class="w-full" />
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <Button label="Cancel" severity="secondary" text @click="showDialog = false" />
+            <Button label="Create Alert" :loading="alertLoading" @click="submitAlert" />
+          </div>
+        </div>
+      </Dialog>
     </template>
   </div>
 </template>

@@ -53,8 +53,8 @@ async function submit() {
       <div class="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
       <div class="flex items-center gap-2 mb-8 relative z-10">
-        <i class="pi pi-chart-line text-green text-3xl"></i>
-        <span class="font-bold text-2xl tracking-tight text-[var(--p-surface-0)]">PriceWatch</span>
+        <i class="pi pi-bullseye text-green text-3xl"></i>
+        <span class="font-bold text-2xl tracking-tight text-[var(--p-surface-0)]">DealRadar</span>
       </div>
 
       <h1 class="text-2xl font-bold m-0 mb-2 relative z-10 text-[var(--p-surface-0)]">Create an account</h1>
