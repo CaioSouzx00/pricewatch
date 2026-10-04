@@ -16,7 +16,9 @@ PriceWatch is a self-hosted, full-stack price intelligence platform designed to 
 
 - **Automated Data Collection:** Scheduled background jobs using Kotlin Coroutines for non-blocking scraping.
 - **Price History Tracking:** Persistent historical data visualized through dynamic charts.
-- **Alert Evaluation:** Real-time threshold evaluation to trigger notifications when a price drops below a configured target.
+- **Product Intelligence & Analytics:** Volatility calculation, historical minimum/maximum tracking, and price opportunity indicators.
+- **Alert Evaluation:** Advanced alert rules (`PRICE_BELOW`, `PERCENTAGE_DROP`, `HISTORICAL_MIN`) evaluated in real-time.
+- **Scraper Observability:** Silent telemetry (Scrape Logs) tracks scraper latency and success ratios without blocking execution.
 - **Pluggable Scraper Architecture:** Abstracted scraper engine currently supporting Mercado Livre, designed for easy extension.
 - **Multi-Channel Notifications:** Integrated with Novu for reliable delivery of price alerts.
 - **Secure Authentication:** JWT-based stateless authentication with password hashing (BCrypt).
@@ -275,6 +277,11 @@ flowchart LR
 - Price history tracking and visualization
 - Alerts engine and Novu integration
 - Docker containerization
+- PrimeVue Design Overhaul & App Layout
+- Product Intelligence Dashboard
+- Watchlist capabilities
+- Advanced Alert rules (Percentage Drop, Historical Min)
+- Scraper Observability (Telemetry)
 
 ### Planned
 - Add support for Amazon and other major retailers

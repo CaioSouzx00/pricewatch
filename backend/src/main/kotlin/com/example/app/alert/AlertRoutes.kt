@@ -33,9 +33,16 @@ fun Route.alertRoutes(alerts: AlertRepository, products: ProductRepository) {
                         if (target.signum() <= 0 || target.precision() - target.scale() > 10) {
                             throw badRequest("Preço alvo inválido")
                         }
-                        request
+                        request.copy(percentageDrop = null)
                     }
-                    else -> request.copy(targetPrice = null)
+                    AlertType.PERCENTAGE_DROP -> {
+                        val percentage = request.percentageDrop ?: throw badRequest("percentageDrop é obrigatório para PERCENTAGE_DROP")
+                        if (percentage.signum() <= 0 || percentage > java.math.BigDecimal(100)) {
+                            throw badRequest("Porcentagem de queda inválida")
+                        }
+                        request.copy(targetPrice = null)
+                    }
+                    else -> request.copy(targetPrice = null, percentageDrop = null)
                 }
                 call.respond(HttpStatusCode.Created, alerts.create(call.userId(), sanitized))
             }
