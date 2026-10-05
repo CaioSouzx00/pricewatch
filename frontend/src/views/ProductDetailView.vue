@@ -4,7 +4,9 @@ import { useRoute } from 'vue-router'
 import { api, ApiError } from '../api/client'
 import { getPriceHistory, getProduct, type PricePoint, type Product } from '../api/products'
 import PriceChart from '../components/PriceChart.vue'
+import PriceRangeBar from '../components/PriceRangeBar.vue'
 import { formatMoney } from '../utils/stats'
+import { formatDelta, pricePosition, toSeries } from '../utils/priceSeries'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
 import Button from 'primevue/button'
@@ -39,6 +41,10 @@ const buyScore = computed(() => {
     if (price > avg * 1.05) return { label: 'Expensive', severity: 'danger', icon: 'pi pi-exclamation-triangle' }
     return { label: 'Fair Price', severity: 'secondary', icon: 'pi pi-minus' }
 })
+
+const position = computed(() =>
+    pricePosition(toSeries(history.value), product.value?.currentPrice ? Number(product.value.currentPrice) : undefined)
+)
 
 async function load() {
   loading.value = true
@@ -153,30 +159,18 @@ onMounted(load)
         <Card class="lg:col-span-2">
             <template #title>Price Intelligence</template>
             <template #content>
-                <div v-if="analytics && history.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <div class="p-3 bg-[var(--p-surface-950)] rounded-lg border border-[var(--p-surface-800)]">
-                        <div class="text-xs text-muted mb-1">Historical Minimum</div>
-                        <div class="text-lg font-bold">{{ money(analytics.minPrice) }}</div>
-                        <div class="text-xs text-muted mt-1">{{ analytics.daysSinceLowest }} days ago</div>
+                <div v-if="analytics && position">
+                    <div class="verdict">
+                        <span class="verdict-value" :class="position.vsAvg <= 0 ? 'text-green' : 'text-red'">{{ formatDelta(position.vsAvg) }}</span>
+                        <span class="text-muted text-sm">vs. historical average of {{ money(analytics.averagePrice) }}</span>
                     </div>
-                    <div class="p-3 bg-[var(--p-surface-950)] rounded-lg border border-[var(--p-surface-800)]">
-                        <div class="text-xs text-muted mb-1">Historical Average</div>
-                        <div class="text-lg font-bold">{{ money(analytics.averagePrice) }}</div>
-                    </div>
-                    <div class="p-3 bg-[var(--p-surface-950)] rounded-lg border border-[var(--p-surface-800)]">
-                        <div class="text-xs text-muted mb-1">Historical Maximum</div>
-                        <div class="text-lg font-bold">{{ money(analytics.maxPrice) }}</div>
-                    </div>
-                    <div class="p-3 bg-[var(--p-surface-950)] rounded-lg border border-[var(--p-surface-800)]">
-                        <div class="text-xs text-muted mb-1">Change from Average</div>
-                        <div class="text-lg font-bold" :class="(analytics.percentageChange || 0) <= 0 ? 'text-green' : 'text-red'">
-                            {{ (analytics.percentageChange || 0) <= 0 ? '' : '+' }}{{ analytics.percentageChange }}%
-                        </div>
-                    </div>
-                    <div class="p-3 bg-[var(--p-surface-950)] rounded-lg border border-[var(--p-surface-800)]">
-                        <div class="text-xs text-muted mb-1">Volatility</div>
-                        <div class="text-lg font-bold">{{ analytics.volatility }}</div>
-                    </div>
+                    <PriceRangeBar :position="position" :currency="currency" labels class="mt-4" />
+                    <dl class="facts">
+                        <div><dt>Lowest</dt><dd>{{ money(analytics.minPrice) }}<small>{{ analytics.daysSinceLowest === 0 ? 'today' : analytics.daysSinceLowest + 'd ago' }}</small></dd></div>
+                        <div><dt>Highest</dt><dd>{{ money(analytics.maxPrice) }}</dd></div>
+                        <div><dt>Volatility</dt><dd>±{{ money(analytics.volatility) }}</dd></div>
+                        <div><dt>Data points</dt><dd>{{ history.length }}</dd></div>
+                    </dl>
                 </div>
                 <div v-else class="text-muted text-sm py-4">
                     Not enough data points for analytics.
@@ -221,6 +215,12 @@ onMounted(load)
 </template>
 
 <style scoped>
+.verdict { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.5rem 0.75rem; }
+.verdict-value { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1rem 1.5rem; margin: 1.5rem 0 0; padding-top: 1rem; border-top: 1px solid var(--p-surface-800); }
+.facts dt { font-size: 0.75rem; color: var(--p-surface-400); margin-bottom: 0.25rem; }
+.facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.facts small { margin-left: 0.4rem; font-weight: 400; color: var(--p-surface-500); }
 /* Basic grid utilities since we don't have tailwind fully available */
 .grid { display: grid; }
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
