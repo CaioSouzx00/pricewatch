@@ -41,6 +41,7 @@ data class ProductCreateRequest(
     val imageUrl: String? = null,
     val currency: String = "BRL",
     val currentPrice: Money? = null,
+    val checkIntervalMinutes: Int? = null,
 )
 
 @Serializable
@@ -51,6 +52,7 @@ data class ProductUpdateRequest(
     val currency: String? = null,
     val currentPrice: Money? = null,
     val active: Boolean? = null,
+    val checkIntervalMinutes: Int? = null,
 )
 
 @Serializable
@@ -68,6 +70,8 @@ data class ProductResponse(
     val createdAt: Timestamp,
     val updatedAt: Timestamp,
     val inStock: Boolean? = null,
+    val checkIntervalMinutes: Int = 60,
+    val lastCheckedAt: Timestamp? = null,
 )
 
 // ---------- Price history ----------
@@ -87,14 +91,59 @@ data class AlertCreateRequest(
 )
 
 @Serializable
+data class AlertUpdateRequest(
+    val type: AlertType? = null,
+    val targetPrice: Money? = null,
+    val percentageDrop: Money? = null,
+)
+
+@Serializable
 data class AlertResponse(
     val id: Long,
     val userId: Long,
     val productId: Long,
+    val productName: String = "",
+    val productImageUrl: String? = null,
     val type: AlertType,
     val targetPrice: Money?,
-    val percentageDrop: Money?,
+    val percentageDrop: Money? = null,
     val active: Boolean,
     val triggeredAt: Timestamp?,
     val createdAt: Timestamp,
 )
+
+// ---------- Scraper Observability ----------
+@Serializable
+data class ScrapeFailureItem(
+    val productId: Long,
+    val store: String?,
+    val errorMessage: String?,
+    val latencyMs: Int?,
+    val createdAt: Timestamp,
+    val blocked: Boolean,
+)
+
+@Serializable
+data class StoreScrapeStats(
+    val total: Long,
+    val successCount: Long,
+    val failedCount: Long,
+    val blockedCount: Long,
+    val successRate: Double,
+    val averageLatencyMs: Double,
+    val p95LatencyMs: Double,
+)
+
+@Serializable
+data class ScraperStatsResponse(
+    val total: Long,
+    val successCount: Long,
+    val failedCount: Long,
+    val blockedCount: Long,
+    val successRate: Double,
+    val averageLatencyMs: Double,
+    val p95LatencyMs: Double,
+    val recentFailures: List<ScrapeFailureItem>,
+    val byStore: Map<String, StoreScrapeStats>,
+)
+

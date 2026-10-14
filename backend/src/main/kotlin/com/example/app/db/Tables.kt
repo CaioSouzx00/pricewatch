@@ -22,6 +22,8 @@ object ProductsTable : LongIdTable("products") {
     val inStock = bool("in_stock").nullable()
     val active = bool("active").default(true)
     val isFavorite = bool("is_favorite").default(false)
+    val checkIntervalMinutes = integer("check_interval_minutes").default(60)
+    val lastCheckedAt = timestamp("last_checked_at").nullable()
     val createdAt = timestamp("created_at").clientDefault { Instant.now() }
     val updatedAt = timestamp("updated_at").clientDefault { Instant.now() }
 }
@@ -45,7 +47,9 @@ object AlertsTable : LongIdTable("alerts") {
 
 object ScrapeLogsTable : LongIdTable("scrape_logs") {
     val productId = reference("product_id", ProductsTable)
+    val store = varchar("store", 120).nullable()
     val success = bool("success")
+    val blocked = bool("blocked").default(false)
     val errorMessage = text("error_message").nullable()
     val latencyMs = integer("latency_ms").nullable()
     val createdAt = timestamp("created_at").clientDefault { Instant.now() }

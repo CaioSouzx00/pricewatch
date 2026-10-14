@@ -8,6 +8,7 @@ data class ScrapeResult(
     val price: BigDecimal,
     val currency: String = "BRL",
     val inStock: Boolean,
+    val imageUrl: String? = null,
 )
 
 sealed class ScrapeException(message: String, cause: Throwable? = null) : Exception(message, cause) {

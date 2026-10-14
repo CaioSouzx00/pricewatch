@@ -44,7 +44,12 @@ fun main() {
 
 fun Application.module(
     jwtConfig: JwtConfig = JwtConfig.fromEnv(),
-    scrapers: List<PriceScraper> = listOf(MercadoLivreScraper()),
+    scrapers: List<PriceScraper> = listOf(
+        com.example.app.scraping.MercadoLivreScraper(),
+        com.example.app.scraping.AmazonScraper(),
+        com.example.app.scraping.KabumScraper(),
+        com.example.app.scraping.ShopeeScraper(),
+    ),
     notifier: Notifier = notifierFromEnv(),
 ) {
     configureLogging()
@@ -60,7 +65,8 @@ fun Application.module(
     val alertRepository = AlertRepository()
     val scrapeLogRepository = com.example.app.repository.ScrapeLogRepository()
     val alertEvaluator = AlertEvaluator(alertRepository, userRepository, historyRepository, notifier)
-    val trackingService = PriceTrackingService(scrapers, productRepository, historyRepository, scrapeLogRepository, alertEvaluator)
+    val registry = com.example.app.scraping.PriceScraperRegistry(scrapers)
+    val trackingService = PriceTrackingService(registry, productRepository, historyRepository, scrapeLogRepository, alertEvaluator)
 
     routing {
         get("/health") { call.respond(HealthResponse("ok")) }

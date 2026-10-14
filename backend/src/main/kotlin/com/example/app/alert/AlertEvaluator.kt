@@ -10,6 +10,20 @@ import kotlinx.coroutines.CancellationException
 import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 
+object AlertMath {
+    /**
+     * Calcula a porcentagem de queda entre [oldPrice] e [newPrice] de forma pura e segura.
+     * Retorna nulo se [oldPrice] for nulo, menor ou igual a zero.
+     * Usa RoundingMode.HALF_UP para evitar ArithmeticException em dízimas periódicas.
+     */
+    fun calculatePercentageDrop(oldPrice: BigDecimal?, newPrice: BigDecimal): BigDecimal? {
+        if (oldPrice == null || oldPrice.compareTo(BigDecimal.ZERO) <= 0) return null
+        if (newPrice >= oldPrice) return BigDecimal.ZERO
+        val dropAmount = oldPrice.subtract(newPrice)
+        return dropAmount.multiply(BigDecimal(100)).divide(oldPrice, 4, java.math.RoundingMode.HALF_UP)
+    }
+}
+
 object AlertRules {
     /**
      * [oldPrice]/[oldInStock] são nulos na primeira coleta; nesse caso só `PRICE_BELOW`
@@ -26,8 +40,8 @@ object AlertRules {
         AlertType.PRICE_UP -> oldPrice != null && newPrice > oldPrice
         AlertType.STOCK_CHANGE -> oldInStock != null && oldInStock != newInStock
         AlertType.PERCENTAGE_DROP -> {
-            if (oldPrice != null && alert.percentageDrop != null && oldPrice > BigDecimal.ZERO) {
-                val drop = (oldPrice - newPrice) / oldPrice * BigDecimal(100)
+            if (alert.percentageDrop != null) {
+                val drop = AlertMath.calculatePercentageDrop(oldPrice, newPrice) ?: return false
                 drop >= alert.percentageDrop
             } else false
         }
