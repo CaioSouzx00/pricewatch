@@ -35,13 +35,19 @@ class AuthRoutesTest {
     fun setUp() {
         Database.connect("jdbc:h2:mem:auth_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL", driver = "org.h2.Driver")
         transaction {
-            SchemaUtils.create(UsersTable, ProductsTable, PriceHistoryTable, AlertsTable)
+            SchemaUtils.create(UsersTable, ProductsTable, PriceHistoryTable, AlertsTable, com.example.app.db.ScrapeLogsTable)
         }
     }
 
     @AfterTest
     fun tearDown() {
-        transaction { UsersTable.deleteAll() }
+        transaction {
+            com.example.app.db.ScrapeLogsTable.deleteAll()
+            AlertsTable.deleteAll()
+            PriceHistoryTable.deleteAll()
+            ProductsTable.deleteAll()
+            UsersTable.deleteAll()
+        }
     }
 
     private fun withApp(block: suspend ApplicationTestBuilder.(io.ktor.client.HttpClient) -> Unit) =

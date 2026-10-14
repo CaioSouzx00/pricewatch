@@ -30,7 +30,48 @@ object MercadoLivreParser {
             ?: offer?.get("priceCurrency")?.primitiveContent()
             ?: "BRL"
 
-        return ScrapeResult(title, price, currency.uppercase(), inStock(doc, offer))
+        val imageUrl = extractImage(doc)
+
+        return ScrapeResult(title, price, currency.uppercase(), inStock(doc, offer), imageUrl)
+    }
+
+    private fun extractImage(doc: Document): String? {
+        val ogImage = doc.selectFirst("meta[property=og:image]")?.attr("content")?.trim()
+        if (isValidImageUrl(ogImage)) return ogImage
+
+        val jsonLdImg = jsonLdImage(doc)
+        if (isValidImageUrl(jsonLdImg)) return jsonLdImg
+
+        val domImage = doc.selectFirst(".ui-pdp-gallery img, img.ui-pdp-image, img[data-zoom]")?.attr("src")?.trim()
+            ?: doc.selectFirst("img[src^=http]")?.attr("src")?.trim()
+        if (isValidImageUrl(domImage)) return domImage
+
+        return null
+    }
+
+    private fun jsonLdImage(doc: Document): String? {
+        for (script in doc.select("script[type=application/ld+json]")) {
+            val root = runCatching { Json.parseToJsonElement(script.data()) }.getOrNull() ?: continue
+            val nodes = if (root is JsonArray) root else listOf(root)
+            for (node in nodes) {
+                val obj = node as? JsonObject ?: continue
+                val img = obj["image"] ?: continue
+                when (img) {
+                    is JsonPrimitive -> img.contentOrNull?.let { return it }
+                    is JsonArray -> img.firstOrNull()?.primitiveContent()?.let { return it }
+                    is JsonObject -> img["url"]?.primitiveContent()?.let { return it }
+                    else -> {}
+                }
+            }
+        }
+        return null
+    }
+
+    fun isValidImageUrl(url: String?): Boolean {
+        if (url.isNullOrBlank()) return false
+        val trimmed = url.trim()
+        return (trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)) &&
+            !trimmed.startsWith("data:", ignoreCase = true)
     }
 
     private fun metaPrice(doc: Document): BigDecimal? =

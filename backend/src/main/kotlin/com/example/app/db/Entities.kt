@@ -26,6 +26,8 @@ class ProductEntity(id: EntityID<Long>) : LongEntity(id) {
     var inStock by ProductsTable.inStock
     var active by ProductsTable.active
     var isFavorite by ProductsTable.isFavorite
+    var checkIntervalMinutes by ProductsTable.checkIntervalMinutes
+    var lastCheckedAt by ProductsTable.lastCheckedAt
     var createdAt by ProductsTable.createdAt
     var updatedAt by ProductsTable.updatedAt
 }
@@ -55,7 +57,9 @@ class ScrapeLogEntity(id: EntityID<Long>) : LongEntity(id) {
     companion object : LongEntityClass<ScrapeLogEntity>(ScrapeLogsTable)
 
     var product by ProductEntity referencedOn ScrapeLogsTable.productId
+    var store by ScrapeLogsTable.store
     var success by ScrapeLogsTable.success
+    var blocked by ScrapeLogsTable.blocked
     var errorMessage by ScrapeLogsTable.errorMessage
     var latencyMs by ScrapeLogsTable.latencyMs
     var createdAt by ScrapeLogsTable.createdAt

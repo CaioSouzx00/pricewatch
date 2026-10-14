@@ -33,6 +33,11 @@ private fun validatePrice(price: BigDecimal): BigDecimal {
     return price
 }
 
+private fun validateCheckInterval(minutes: Int): Int {
+    if (minutes < 15 || minutes > 1440) throw badRequest("Intervalo de checagem deve estar entre 15 e 1440 minutos")
+    return minutes
+}
+
 /** Produto pertencente ao usuário autenticado; 404 também para produtos de terceiros. */
 private fun ProductRepository.findOwned(call: ApplicationCall): ProductResponse {
     val id = call.parameters["id"]?.toLongOrNull() ?: throw badRequest("ID inválido")
@@ -52,12 +57,24 @@ fun Route.productRoutes(products: ProductRepository) {
                     store = PlatformDetector.detect(url),
                     currency = validateCurrency(request.currency),
                     currentPrice = request.currentPrice?.let(::validatePrice),
+                    checkIntervalMinutes = request.checkIntervalMinutes?.let(::validateCheckInterval),
                 )
                 call.respond(HttpStatusCode.Created, products.create(call.userId(), sanitized))
             }
 
             get {
-                call.respond(products.listByUser(call.userId()))
+                val store = call.request.queryParameters["store"]?.trim()?.takeIf { it.isNotEmpty() }
+                val inStock = call.request.queryParameters["inStock"]?.toBooleanStrictOrNull()
+                val tracking = call.request.queryParameters["tracking"]?.trim()?.takeIf { it.isNotEmpty() }
+                val favorite = call.request.queryParameters["favorite"]?.toBooleanStrictOrNull()
+
+                call.respond(products.listByUser(
+                    userId = call.userId(),
+                    store = store,
+                    inStock = inStock,
+                    tracking = tracking,
+                    favorite = favorite,
+                ))
             }
 
             get("/{id}") {
@@ -73,6 +90,7 @@ fun Route.productRoutes(products: ProductRepository) {
                     url = url,
                     currency = request.currency?.let(::validateCurrency),
                     currentPrice = request.currentPrice?.let(::validatePrice),
+                    checkIntervalMinutes = request.checkIntervalMinutes?.let(::validateCheckInterval),
                 )
                 val updated = products.update(existing.id, sanitized, store = url?.let(PlatformDetector::detect))
                     ?: throw ApiException(HttpStatusCode.NotFound, "Produto não encontrado")

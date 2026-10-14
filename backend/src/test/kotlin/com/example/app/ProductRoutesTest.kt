@@ -4,6 +4,7 @@ import com.example.app.auth.JwtConfig
 import com.example.app.db.AlertsTable
 import com.example.app.db.PriceHistoryTable
 import com.example.app.db.ProductsTable
+import com.example.app.db.ScrapeLogsTable
 import com.example.app.db.UsersTable
 import com.example.app.dto.ProductResponse
 import com.example.app.dto.UserCreateRequest
@@ -36,12 +37,13 @@ class ProductRoutesTest {
     @BeforeTest
     fun setUp() {
         Database.connect("jdbc:h2:mem:product_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL", driver = "org.h2.Driver")
-        transaction { SchemaUtils.create(UsersTable, ProductsTable, PriceHistoryTable, AlertsTable) }
+        transaction { SchemaUtils.create(UsersTable, ProductsTable, PriceHistoryTable, AlertsTable, ScrapeLogsTable) }
     }
 
     @AfterTest
     fun tearDown() {
         transaction {
+            ScrapeLogsTable.deleteAll()
             AlertsTable.deleteAll()
             PriceHistoryTable.deleteAll()
             ProductsTable.deleteAll()
@@ -64,10 +66,12 @@ class ProductRoutesTest {
         token: String,
         url: String = "https://www.mercadolivre.com.br/produto-123",
         name: String = "Fone",
+        intervalMinutes: Int? = null,
     ) = post("/products") {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
-        setBody("""{"name":"$name","url":"$url","currentPrice":"199.90"}""")
+        val intervalJson = if (intervalMinutes != null) ""","checkIntervalMinutes":$intervalMinutes""" else ""
+        setBody("""{"name":"$name","url":"$url","currentPrice":"199.90"$intervalJson}""")
     }
 
     @Test
@@ -91,6 +95,25 @@ class ProductRoutesTest {
         assertEquals("Mercado Livre", product.store)
         assertEquals("199.90", product.currentPrice?.toPlainString())
         assertEquals("BRL", product.currency)
+        assertEquals(60, product.checkIntervalMinutes)
+    }
+
+    @Test
+    fun `valida intervalo de checagem minimo e maximo`() = withApp { client ->
+        val token = tokenFor("interval@example.com")
+
+        // Menor que 15 min: 400
+        val low = client.createProduct(token, intervalMinutes = 10)
+        assertEquals(HttpStatusCode.BadRequest, low.status)
+
+        // Maior que 1440 min (24h): 400
+        val high = client.createProduct(token, intervalMinutes = 2000)
+        assertEquals(HttpStatusCode.BadRequest, high.status)
+
+        // Válido (30 min): 201
+        val valid = client.createProduct(token, intervalMinutes = 30)
+        assertEquals(HttpStatusCode.Created, valid.status)
+        assertEquals(30, valid.body<ProductResponse>().checkIntervalMinutes)
     }
 
     @Test
@@ -119,6 +142,43 @@ class ProductRoutesTest {
     }
 
     @Test
+    fun `get com filtros por store, tracking e favorite`() = withApp { client ->
+        val token = tokenFor("filter@example.com")
+        val ml = client.createProduct(token, url = "https://www.mercadolivre.com.br/item-1", name = "Prod 1").body<ProductResponse>()
+        val amz = client.createProduct(token, url = "https://www.amazon.com.br/dp/B0123", name = "Prod 2").body<ProductResponse>()
+
+        // Marca amz como favorito
+        client.put("/products/${amz.id}/favorite") { bearerAuth(token) }
+
+        // Pausa tracking de ml
+        client.put("/products/${ml.id}") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody("""{"active":false}""")
+        }
+
+        // Filtro store=Amazon
+        val amazonList = client.get("/products?store=Amazon") { bearerAuth(token) }.body<List<ProductResponse>>()
+        assertEquals(1, amazonList.size)
+        assertEquals("Amazon", amazonList.first().store)
+
+        // Filtro favorite=true
+        val favList = client.get("/products?favorite=true") { bearerAuth(token) }.body<List<ProductResponse>>()
+        assertEquals(1, favList.size)
+        assertEquals(amz.id, favList.first().id)
+
+        // Filtro tracking=paused
+        val pausedList = client.get("/products?tracking=paused") { bearerAuth(token) }.body<List<ProductResponse>>()
+        assertEquals(1, pausedList.size)
+        assertEquals(ml.id, pausedList.first().id)
+
+        // Filtro tracking=active
+        val activeList = client.get("/products?tracking=active") { bearerAuth(token) }.body<List<ProductResponse>>()
+        assertEquals(1, activeList.size)
+        assertEquals(amz.id, activeList.first().id)
+    }
+
+    @Test
     fun `get por id de outro usuario retorna 404`() = withApp { client ->
         val a = tokenFor("a@example.com")
         val b = tokenFor("b@example.com")
@@ -135,13 +195,14 @@ class ProductRoutesTest {
         val response = client.put("/products/$id") {
             bearerAuth(token)
             contentType(ContentType.Application.Json)
-            setBody("""{"name":"Novo nome","url":"https://shopee.com.br/x-i.1.2","active":false}""")
+            setBody("""{"name":"Novo nome","url":"https://shopee.com.br/x-i.1.2","active":false,"checkIntervalMinutes":45}""")
         }
         assertEquals(HttpStatusCode.OK, response.status)
         val updated = response.body<ProductResponse>()
         assertEquals("Novo nome", updated.name)
         assertEquals("Shopee", updated.store)
         assertEquals(false, updated.active)
+        assertEquals(45, updated.checkIntervalMinutes)
         assertEquals("199.90", updated.currentPrice?.toPlainString())
     }
 
