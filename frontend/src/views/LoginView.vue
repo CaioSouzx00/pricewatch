@@ -25,7 +25,7 @@ async function submit() {
     await auth.login(email.value.trim(), password.value)
     await router.replace(safeRedirect(route.query.redirect))
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'Unexpected error'
+    error.value = e instanceof ApiError ? e.message : 'Credenciais inválidas ou erro no terminal'
   } finally {
     loading.value = false
   }
@@ -33,87 +33,388 @@ async function submit() {
 </script>
 
 <template>
-  <main class="min-h-screen flex items-center justify-center p-4 bg-[var(--p-surface-950)]">
-    <div class="w-full max-w-md p-8 rounded-2xl border border-[var(--p-surface-800)] bg-[var(--p-surface-900)] shadow-xl relative overflow-hidden">
-      <!-- Decorative gradient blob -->
-      <div class="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-
-      <div class="flex items-center gap-2 mb-8 relative z-10">
-        <i class="pi pi-bullseye text-green text-3xl"></i>
-        <span class="font-bold text-2xl tracking-tight text-[var(--p-surface-0)]">DealRadar</span>
+  <main class="auth-layout">
+    <!-- Left Editorial Terminal Panel -->
+    <section class="auth-editorial-panel">
+      <div class="panel-header">
+        <div class="brand-radar">
+          <div class="radar-scan" />
+          <div class="radar-dot" />
+        </div>
+        <span class="brand-title">PRICEWATCH // TERMINAL</span>
       </div>
 
-      <h1 class="text-2xl font-bold m-0 mb-2 relative z-10 text-[var(--p-surface-0)]">Welcome back</h1>
-      <p class="text-muted text-sm mb-8 relative z-10">Sign in to your account to continue tracking your products.</p>
+      <div class="panel-hero">
+        <span class="tech-label">INTELIGÊNCIA DE PREÇOS EM TEMPO REAL</span>
+        <h2 class="editorial-quote">
+          "O preço é o único dado que não mente. Monitore cada oscilação antes de fechar negócio."
+        </h2>
 
-      <form @submit.prevent="submit" novalidate class="flex flex-col gap-5 relative z-10">
-        <Message v-if="error" severity="error" :closable="false" class="m-0 mb-2">{{ error }}</Message>
-
-        <div class="flex flex-col gap-2">
-          <label for="login-email" class="text-sm text-muted">Email address</label>
-          <InputText id="login-email" v-model="email" type="email" autocomplete="email" required class="w-full" placeholder="you@example.com" />
-        </div>
-        
-        <div class="flex flex-col gap-2">
-          <div class="flex justify-between items-center">
-             <label for="login-password" class="text-sm text-muted">Password</label>
-             <a href="#" class="text-xs text-green hover:underline" @click.prevent>Forgot password?</a>
+        <!-- Simulated Live Market Ticker Stream -->
+        <div class="ticker-box">
+          <div class="ticker-row">
+            <span class="t-id">#0042</span>
+            <span class="t-name">MacBook Pro M3 Max</span>
+            <span class="t-price tabular num">R$ 18.499,00</span>
+            <span class="t-delta tone-good">▼ −14,2%</span>
           </div>
-          <Password id="login-password" v-model="password" :feedback="false" toggleMask inputClass="w-full" class="w-full" placeholder="••••••••" required />
+          <div class="ticker-row">
+            <span class="t-id">#0019</span>
+            <span class="t-name">Sony WH-1000XM5</span>
+            <span class="t-price tabular num">R$ 1.949,00</span>
+            <span class="t-delta tone-good">▼ −8,5%</span>
+          </div>
+          <div class="ticker-row">
+            <span class="t-id">#0087</span>
+            <span class="t-name">Monitor Dell UltraSharp 32"</span>
+            <span class="t-price tabular num">R$ 4.890,00</span>
+            <span class="t-delta tone-danger">▲ +3,1%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <div class="status-feed">
+          <span class="pulse-green" />
+          <span class="tech-label">MOTOR DE SCRAPING ATIVO // LATÊNCIA 18MS</span>
+        </div>
+        <span class="tech-label">V2.4.0</span>
+      </div>
+    </section>
+
+    <!-- Right Form Section -->
+    <section class="auth-form-section">
+      <div class="form-container">
+        <div class="form-header">
+          <span class="tech-label">AUTENTICAÇÃO DE OPERADOR</span>
+          <h1 class="form-title">Acessar Terminal</h1>
+          <p class="form-sub">Insira suas credenciais cadastradas para ingressar no painel de monitoramento.</p>
         </div>
 
-        <Button id="login-submit" type="submit" :loading="loading" :disabled="!email || !password" label="Sign in" class="w-full mt-2" />
-      </form>
+        <form @submit.prevent="submit" novalidate class="auth-form">
+          <Message v-if="error" severity="error" :closable="false" class="auth-error">
+            {{ error }}
+          </Message>
 
-      <p class="text-center text-sm text-muted mt-8 relative z-10">
-        Don't have an account?
-        <RouterLink id="go-register" :to="{ name: 'register', query: route.query }" class="text-green hover:underline">Sign up</RouterLink>
-      </p>
-    </div>
+          <div class="field-item">
+            <label for="login-email" class="field-label">ENDEREÇO DE E-MAIL</label>
+            <InputText
+              id="login-email"
+              v-model="email"
+              type="email"
+              autocomplete="email"
+              required
+              class="w-full"
+              placeholder="operador@pricewatch.io"
+            />
+          </div>
+
+          <div class="field-item">
+            <div class="label-with-link">
+              <label for="login-password" class="field-label">CHAVE DE ACESSO (SENHA)</label>
+            </div>
+            <Password
+              id="login-password"
+              v-model="password"
+              :feedback="false"
+              toggleMask
+              inputClass="w-full"
+              class="w-full"
+              placeholder="••••••••••••"
+              required
+            />
+          </div>
+
+          <Button
+            id="login-submit"
+            type="submit"
+            :loading="loading"
+            :disabled="!email || !password"
+            label="Ingressar no Terminal"
+            class="p-button-primary auth-submit-btn cursor-hover"
+          />
+        </form>
+
+        <div class="form-footer">
+          <span class="footer-prompt">Ainda não possui credencial?</span>
+          <RouterLink
+            id="go-register"
+            :to="{ name: 'register', query: route.query }"
+            class="footer-link cursor-hover"
+          >
+            Criar conta de operador →
+          </RouterLink>
+        </div>
+      </div>
+    </section>
   </main>
 </template>
 
 <style scoped>
-.min-h-screen { min-height: 100vh; }
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.p-4 { padding: 1rem; }
-.p-8 { padding: 2rem; }
-.w-full { width: 100%; }
-.max-w-md { max-width: 28rem; }
-.rounded-2xl { border-radius: 1rem; }
-.border { border-width: 1px; }
-.shadow-xl { box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5); }
-.relative { position: relative; }
-.absolute { position: absolute; }
-.overflow-hidden { overflow: hidden; }
-.top-0 { top: 0; }
-.right-0 { right: 0; }
-.w-64 { width: 16rem; }
-.h-64 { height: 16rem; }
-.bg-green-500\/10 { background-color: rgba(16, 185, 129, 0.1); }
-.rounded-full { border-radius: 9999px; }
-.blur-3xl { filter: blur(64px); }
-.-translate-y-1\/2 { transform: translateY(-50%); }
-.translate-x-1\/2 { transform: translateX(50%); }
-.pointer-events-none { pointer-events: none; }
-.z-10 { z-index: 10; }
-.gap-2 { gap: 0.5rem; }
-.gap-5 { gap: 1.25rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-8 { margin-bottom: 2rem; }
-.mt-2 { margin-top: 0.5rem; }
-.mt-8 { margin-top: 2rem; }
-.m-0 { margin: 0; }
-.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
-.text-2xl { font-size: 1.5rem; line-height: 2rem; }
-.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-.text-xs { font-size: 0.75rem; line-height: 1rem; }
-.text-center { text-align: center; }
-.tracking-tight { letter-spacing: -0.025em; }
-.no-underline { text-decoration: none; }
-.hover\:underline:hover { text-decoration: underline; }
+.auth-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background-color: var(--bg);
+}
+
+/* --- Left Editorial Panel --- */
+.auth-editorial-panel {
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-subtle);
+  padding: 3.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-editorial-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brand-radar {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--accent-border);
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radar-scan {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, var(--accent) 360deg);
+  opacity: 0.25;
+  animation: rotate-scan 4s linear infinite;
+}
+
+@keyframes rotate-scan {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.radar-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.1em;
+  color: var(--text-primary);
+}
+
+.panel-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 520px;
+}
+
+.editorial-quote {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 2.75vw, 2.25rem);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.ticker-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ticker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ticker-row:last-child {
+  border-bottom: none;
+}
+
+.t-id { color: var(--text-muted); }
+.t-name {
+  color: var(--text-primary);
+  font-weight: 500;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.t-price { font-weight: 700; color: var(--text-primary); }
+.t-delta { font-weight: 700; font-size: 0.6875rem; }
+
+.tone-good { color: var(--accent); }
+.tone-danger { color: var(--danger); }
+
+.panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.status-feed {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pulse-green {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* --- Right Form Section --- */
+.auth-form-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.form-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.form-sub {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.auth-error {
+  margin: 0;
+}
+
+.field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.label-with-link {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.auth-submit-btn {
+  margin-top: 0.5rem;
+  padding: 0.75rem !important;
+  font-size: 0.875rem !important;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.form-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.footer-prompt {
+  color: var(--text-muted);
+}
+
+.footer-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color var(--duration-fast) ease;
+}
+
+.footer-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+  .auth-editorial-panel {
+    display: none;
+  }
+  .auth-form-section {
+    padding: 3rem 1.5rem;
+  }
+}
 </style>

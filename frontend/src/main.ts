@@ -4,10 +4,12 @@ import router from './router'
 import './styles.css'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
+import ToastService from 'primevue/toastservice'
+import ConfirmationService from 'primevue/confirmationservice'
 import Aura from '@primevue/themes/aura'
 import { definePreset } from '@primevue/themes'
 
-const MyPreset = definePreset(Aura, {
+const TerminalPreset = definePreset(Aura, {
     semantic: {
         primary: {
             50: '#ecfdf5',
@@ -15,7 +17,7 @@ const MyPreset = definePreset(Aura, {
             200: '#a7f3d0',
             300: '#6ee7b7',
             400: '#34d399',
-            500: '#10b981', // main green
+            500: '#10b981', // Accent brand / good price drop
             600: '#059669',
             700: '#047857',
             800: '#065f46',
@@ -47,12 +49,12 @@ const MyPreset = definePreset(Aura, {
                     200: '#e4e4e7',
                     300: '#d4d4d8',
                     400: '#a1a1aa',
-                    500: '#71717a',
-                    600: '#52525b',
-                    700: '#3f3f46',
-                    800: '#27272a',
-                    900: '#18181b', // charcoal
-                    950: '#09090b'  // deep black
+                    500: '#8a8a93',
+                    600: '#3f3f46',
+                    700: '#27272a',
+                    800: '#18181b',
+                    900: '#121214',
+                    950: '#09090b'
                 }
             }
         }
@@ -64,11 +66,13 @@ const app = createApp(App)
 app.use(router)
 app.use(PrimeVue, {
     theme: {
-        preset: MyPreset,
+        preset: TerminalPreset,
         options: {
             darkModeSelector: '.dark',
         }
     }
 })
+app.use(ToastService)
+app.use(ConfirmationService)
 
 app.mount('#app')

@@ -16,7 +16,8 @@ export const RANGES: RangeOption[] = [
   { key: '7d', label: '7D', days: 7 },
   { key: '30d', label: '30D', days: 30 },
   { key: '90d', label: '90D', days: 90 },
-  { key: 'all', label: 'All', days: null },
+  { key: '1y', label: '1A', days: 365 },
+  { key: 'all', label: 'Tudo', days: null },
 ]
 
 const DAY = 86_400_000
