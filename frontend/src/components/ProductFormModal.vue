@@ -43,70 +43,157 @@ async function submit() {
     const input = {
       name: name.value.trim(),
       url: url.value.trim(),
-      currency: currency.value.trim().toUpperCase(),
+      currency: currency.value.trim().toUpperCase() || 'BRL',
       currentPrice: price.value.trim().replace(',', '.') || null,
     }
     const saved = props.product ? await updateProduct(props.product.id, input) : await createProduct(input)
     emit('saved', saved)
     visible.value = false
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'Unexpected error'
+    error.value = e instanceof ApiError ? e.message : 'Falha ao salvar produto'
   } finally {
     saving.value = false
   }
 }
 
 function onHide() {
-    emit('close')
+  emit('close')
 }
 </script>
 
 <template>
-  <Dialog v-model:visible="visible" modal :header="isEdit ? 'Edit Product' : 'Add Product'" :style="{ width: '400px' }" @hide="onHide">
-    <form @submit.prevent="submit" novalidate class="flex flex-col gap-4 mt-2">
-      <Message v-if="error" severity="error" :closable="false" class="m-0">{{ error }}</Message>
+  <Dialog
+    v-model:visible="visible"
+    modal
+    :header="isEdit ? 'Editar Ativo de Monitoramento' : 'Novo Ativo de Monitoramento'"
+    :style="{ width: '480px' }"
+    @hide="onHide"
+  >
+    <form @submit.prevent="submit" novalidate class="form-body">
+      <Message v-if="error" severity="error" :closable="false" class="form-error">
+        {{ error }}
+      </Message>
 
-      <div class="flex flex-col gap-2">
-        <label for="product-name" class="text-sm font-semibold">Name</label>
-        <InputText id="product-name" v-model="name" type="text" maxlength="255" required autofocus placeholder="e.g. iPhone 15 Pro" class="w-full" />
+      <div class="field-group">
+        <label for="product-name" class="field-label">NOME DO ATIVO / PRODUTO</label>
+        <InputText
+          id="product-name"
+          v-model="name"
+          type="text"
+          maxlength="255"
+          required
+          autofocus
+          placeholder="Ex: Apple MacBook Air M3 15 polegadas"
+          class="field-input"
+        />
       </div>
-      
-      <div class="flex flex-col gap-2">
-        <label for="product-url" class="text-sm font-semibold">Product URL</label>
-        <InputText id="product-url" v-model="url" type="url" placeholder="https://..." required class="w-full" />
+
+      <div class="field-group">
+        <label for="product-url" class="field-label">URL DE MONITORAMENTO (MERCADO LIVRE, AMAZON, ETC.)</label>
+        <InputText
+          id="product-url"
+          v-model="url"
+          type="url"
+          placeholder="https://..."
+          required
+          class="field-input"
+        />
+        <span class="field-hint">O coletor irá verificar este link periodicamente para atualizar o gráfico.</span>
       </div>
-      
-      <div class="flex gap-4">
-        <div class="flex flex-col gap-2 flex-grow">
-          <label for="product-price" class="text-sm font-semibold">Current Price (Optional)</label>
-          <InputText id="product-price" v-model="price" type="text" inputmode="decimal" placeholder="0.00" class="w-full" />
+
+      <div class="field-row">
+        <div class="field-group flex-2">
+          <label for="product-price" class="field-label">PREÇO INICIAL (OPCIONAL)</label>
+          <InputText
+            id="product-price"
+            v-model="price"
+            type="text"
+            inputmode="decimal"
+            placeholder="0,00"
+            class="field-input"
+          />
         </div>
-        <div class="flex flex-col gap-2 w-24">
-          <label for="product-currency" class="text-sm font-semibold">Currency</label>
-          <InputText id="product-currency" v-model="currency" type="text" maxlength="3" class="w-full" />
+
+        <div class="field-group flex-1">
+          <label for="product-currency" class="field-label">MOEDA</label>
+          <InputText
+            id="product-currency"
+            v-model="currency"
+            type="text"
+            maxlength="3"
+            class="field-input text-center"
+          />
         </div>
       </div>
 
-      <div class="flex justify-end gap-2 mt-4">
-        <Button label="Cancel" severity="secondary" text @click="visible = false" />
-        <Button type="submit" :label="saving ? 'Saving...' : 'Save'" :loading="saving" :disabled="!canSubmit" />
+      <div class="modal-footer">
+        <Button
+          label="Cancelar"
+          severity="secondary"
+          type="button"
+          @click="visible = false"
+        />
+        <Button
+          type="submit"
+          :label="saving ? 'Gravando...' : (isEdit ? 'Salvar Alterações' : 'Iniciar Monitoramento')"
+          :loading="saving"
+          :disabled="!canSubmit"
+          class="p-button-primary"
+        />
       </div>
     </form>
   </Dialog>
 </template>
 
 <style scoped>
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.gap-2 { gap: 0.5rem; }
-.gap-4 { gap: 1rem; }
-.mt-2 { margin-top: 0.5rem; }
-.mt-4 { margin-top: 1rem; }
-.m-0 { margin: 0; }
-.w-full { width: 100%; }
-.w-24 { width: 6rem; }
-.flex-grow { flex-grow: 1; }
-.justify-end { justify-content: flex-end; }
-.text-sm { font-size: 0.875rem; }
-.font-semibold { font-weight: 600; }
+.form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-error {
+  margin: 0;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.field-input {
+  width: 100%;
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.field-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+.text-center { text-align: center; }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
 </style>
