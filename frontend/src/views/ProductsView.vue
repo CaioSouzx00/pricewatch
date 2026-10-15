@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ApiError } from '../api/client'
 import { listProducts, type Product } from '../api/products'
 import ProductCard from '../components/ProductCard.vue'
@@ -9,6 +9,7 @@ import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import Paginator from 'primevue/paginator'
 
 const toast = useToast()
 
@@ -21,6 +22,8 @@ const viewMode = ref<'grid' | 'table'>('grid')
 
 const searchQuery = ref('')
 const sortOption = ref('date_desc')
+const currentPage = ref(0)
+const pageSize = ref(12)
 
 const sortOptions = [
   { label: 'Data de Cadastro (Mais Recente)', value: 'date_desc' },
@@ -74,6 +77,15 @@ const filteredProducts = computed(() => {
         return 0
     }
   })
+})
+
+const paginatedProducts = computed(() => {
+  const start = currentPage.value * pageSize.value
+  return filteredProducts.value.slice(start, start + pageSize.value)
+})
+
+watch([searchQuery, sortOption], () => {
+  currentPage.value = 0
 })
 
 function openCreate() {
@@ -219,7 +231,7 @@ onMounted(load)
     <!-- Grid View Mode -->
     <div v-else-if="viewMode === 'grid'" class="products-grid">
       <ProductCard
-        v-for="product in filteredProducts"
+        v-for="product in paginatedProducts"
         :key="product.id"
         :product="product"
         @edit="openEdit"
@@ -244,7 +256,7 @@ onMounted(load)
         </thead>
         <tbody>
           <tr
-            v-for="p in filteredProducts"
+            v-for="p in paginatedProducts"
             :key="'tbl-' + p.id"
             class="market-row cursor-hover"
             @click="$router.push({ name: 'product-detail', params: { id: p.id } })"
@@ -285,6 +297,18 @@ onMounted(load)
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div v-if="filteredProducts.length > pageSize" class="pagination-container">
+      <Paginator
+        :rows="pageSize"
+        :totalRecords="filteredProducts.length"
+        :rowsPerPageOptions="[12, 24, 48]"
+        :first="currentPage * pageSize"
+        class="terminal-paginator"
+        @page="(e) => { currentPage = e.page; pageSize = e.rows; }"
+      />
     </div>
 
     <!-- Create / Edit Modal -->
@@ -561,6 +585,14 @@ onMounted(load)
 .state-msg {
   color: var(--text-muted);
   margin-bottom: 1rem;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 0.5rem;
 }
 
 @media (max-width: 768px) {

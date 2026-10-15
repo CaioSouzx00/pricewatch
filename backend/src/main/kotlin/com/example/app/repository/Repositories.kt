@@ -12,7 +12,7 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.math.BigDecimal
 import java.time.Instant
 
-fun UserEntity.toDto() = UserResponse(id.value, email, name, createdAt)
+fun UserEntity.toDto() = UserResponse(id.value, email, name, role, createdAt)
 
 fun ProductEntity.toDto() = ProductResponse(
     id = id.value,
@@ -96,6 +96,8 @@ class ProductRepository {
         inStock: Boolean? = null,
         tracking: String? = null,
         favorite: Boolean? = null,
+        limit: Int? = null,
+        offset: Long? = null,
     ): List<ProductResponse> = transaction {
         var op: Op<Boolean> = ProductsTable.userId eq EntityID(userId, UsersTable)
         if (!store.isNullOrBlank()) {
@@ -113,9 +115,13 @@ class ProductRepository {
         if (favorite != null) {
             op = op and (ProductsTable.isFavorite eq favorite)
         }
-        ProductEntity.find { op }
+        var query = ProductEntity.find { op }
             .orderBy(ProductsTable.createdAt to SortOrder.DESC)
-            .map { it.toDto() }
+        if (limit != null && limit > 0) {
+            val off = offset ?: 0L
+            query = query.limit(limit, offset = off)
+        }
+        query.map { it.toDto() }
     }
 
     fun listActive(): List<ProductResponse> = transaction {

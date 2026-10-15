@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '../api/client'
 import { safeRedirect } from '../router'
@@ -17,12 +17,18 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+const emailTouched = ref(false)
+
+const emailInvalid = computed(
+  () => emailTouched.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())
+)
 
 async function submit() {
+  if (loading.value || !email.value || !password.value || emailInvalid.value) return
   error.value = ''
   loading.value = true
   try {
-    await auth.login(email.value.trim(), password.value)
+    await auth.login(email.value.trim().toLowerCase(), password.value)
     await router.replace(safeRedirect(route.query.redirect))
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Credenciais inválidas ou erro no terminal'
@@ -104,9 +110,12 @@ async function submit() {
               type="email"
               autocomplete="email"
               required
+              :invalid="emailInvalid"
               class="w-full"
               placeholder="operador@pricewatch.io"
+              @blur="emailTouched = true"
             />
+            <small v-if="emailInvalid" class="field-error-hint">Formato de e-mail inválido</small>
           </div>
 
           <div class="field-item">
@@ -129,7 +138,7 @@ async function submit() {
             id="login-submit"
             type="submit"
             :loading="loading"
-            :disabled="!email || !password"
+            :disabled="loading || !email || !password || emailInvalid"
             label="Ingressar no Terminal"
             class="p-button-primary auth-submit-btn cursor-hover"
           />
@@ -404,6 +413,14 @@ async function submit() {
 .footer-link:hover {
   color: var(--accent-hover);
   text-decoration: underline;
+}
+
+.field-error-hint {
+  color: var(--red, #ef4444);
+  font-size: 0.75rem;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  display: block;
 }
 
 @media (max-width: 900px) {

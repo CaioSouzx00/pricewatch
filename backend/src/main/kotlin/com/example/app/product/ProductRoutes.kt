@@ -67,6 +67,9 @@ fun Route.productRoutes(products: ProductRepository) {
                 val inStock = call.request.queryParameters["inStock"]?.toBooleanStrictOrNull()
                 val tracking = call.request.queryParameters["tracking"]?.trim()?.takeIf { it.isNotEmpty() }
                 val favorite = call.request.queryParameters["favorite"]?.toBooleanStrictOrNull()
+                val limit = call.request.queryParameters["limit"]?.toIntOrNull()?.coerceIn(1, 100)
+                val page = call.request.queryParameters["page"]?.toLongOrNull()?.coerceAtLeast(0)
+                val offset = if (limit != null && page != null) page * limit else null
 
                 call.respond(products.listByUser(
                     userId = call.userId(),
@@ -74,6 +77,8 @@ fun Route.productRoutes(products: ProductRepository) {
                     inStock = inStock,
                     tracking = tracking,
                     favorite = favorite,
+                    limit = limit,
+                    offset = offset,
                 ))
             }
 

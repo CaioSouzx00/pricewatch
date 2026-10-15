@@ -57,3 +57,15 @@ fun Application.configureSecurity(jwtConfig: JwtConfig) {
 fun ApplicationCall.userId(): Long =
     principal<JWTPrincipal>()?.payload?.subject?.toLongOrNull()
         ?: throw ApiException(HttpStatusCode.Unauthorized, "Não autenticado")
+
+/** Retorna o papel (role) do usuário autenticado (padrão "USER"). Use somente dentro de `authenticate(JWT_AUTH)`. */
+fun ApplicationCall.userRole(): String =
+    principal<JWTPrincipal>()?.payload?.getClaim("role")?.asString() ?: "USER"
+
+/** Garante que o usuário possua ao menos um dos papéis especificados. */
+fun ApplicationCall.requireRole(vararg allowedRoles: String) {
+    val role = userRole()
+    if (role !in allowedRoles) {
+        throw ApiException(HttpStatusCode.Forbidden, "Acesso negado: permissão insuficiente")
+    }
+}

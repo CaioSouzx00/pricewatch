@@ -19,7 +19,11 @@ const password = ref('')
 const confirm = ref('')
 const error = ref('')
 const loading = ref(false)
+const emailTouched = ref(false)
 
+const emailInvalid = computed(
+  () => emailTouched.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())
+)
 const passwordTooShort = computed(() => password.value.length > 0 && password.value.length < 8)
 const mismatch = computed(() => confirm.value.length > 0 && confirm.value !== password.value)
 const canSubmit = computed(
@@ -27,6 +31,7 @@ const canSubmit = computed(
     !loading.value &&
     name.value.trim() !== '' &&
     email.value.trim() !== '' &&
+    !emailInvalid.value &&
     password.value.length >= 8 &&
     password.value === confirm.value,
 )
@@ -36,7 +41,7 @@ async function submit() {
   error.value = ''
   loading.value = true
   try {
-    await auth.register(name.value.trim(), email.value.trim(), password.value)
+    await auth.register(name.value.trim(), email.value.trim().toLowerCase(), password.value)
     await router.replace(safeRedirect(route.query.redirect))
   } catch (e) {
     error.value = e instanceof ApiError ? e.message : 'Falha ao registrar operador'
@@ -131,9 +136,12 @@ async function submit() {
               type="email"
               autocomplete="email"
               required
+              :invalid="emailInvalid"
               class="w-full"
               placeholder="operador@pricewatch.io"
+              @blur="emailTouched = true"
             />
+            <span v-if="emailInvalid" class="field-error">Formato de e-mail inválido</span>
           </div>
 
           <div class="field-item">

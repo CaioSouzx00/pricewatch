@@ -24,6 +24,7 @@ const router = createRouter({
         { path: 'watchlist', name: 'watchlist', component: () => import('../views/WatchlistView.vue'), meta: { title: 'Watchlist' } },
         { path: 'alerts', name: 'alerts', component: () => import('../views/AlertsView.vue'), meta: { title: 'Alertas' } },
         { path: '404', name: 'not-found', component: () => import('../views/NotFoundView.vue'), meta: { title: 'Não Encontrado' } },
+        { path: '500', name: 'server-error', component: () => import('../views/Error500View.vue'), meta: { title: '500 - Instabilidade no Terminal' } },
       ]
     },
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { guestOnly: true, title: 'Acesso ao Terminal' } },

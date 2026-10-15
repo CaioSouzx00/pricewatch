@@ -8,6 +8,7 @@ object UsersTable : LongIdTable("users") {
     val email = varchar("email", 255).uniqueIndex()
     val name = varchar("name", 120)
     val passwordHash = varchar("password_hash", 255)
+    val role = varchar("role", 20).default("USER")
     val createdAt = timestamp("created_at").clientDefault { Instant.now() }
 }
 

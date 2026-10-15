@@ -30,7 +30,7 @@ typealias Timestamp = @Serializable(with = InstantSerializer::class) Instant
 data class UserCreateRequest(val email: String, val name: String, val password: String)
 
 @Serializable
-data class UserResponse(val id: Long, val email: String, val name: String, val createdAt: Timestamp)
+data class UserResponse(val id: Long, val email: String, val name: String, val role: String = "USER", val createdAt: Timestamp)
 
 // ---------- Products ----------
 @Serializable

@@ -38,7 +38,7 @@ export async function api<T>(path: string, options: { method?: string; body?: un
 
   const data = await res.json().catch(() => null)
   if (!res.ok) {
-    if (res.status === 401 && token) onUnauthorized()
+    if ((res.status === 401 || res.status === 403) && token) onUnauthorized()
     throw new ApiError(res.status, data?.error ?? 'Erro inesperado')
   }
   return data as T
