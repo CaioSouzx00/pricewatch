@@ -59,8 +59,7 @@ async function load() {
         position: pricePosition(series, Number(product.currentPrice))
       }
     })
-  } catch (e) {
-    console.error(e)
+  } catch {
     error.value = 'Falha ao sincronizar o livro de ofertas do terminal.'
   } finally {
     loading.value = false

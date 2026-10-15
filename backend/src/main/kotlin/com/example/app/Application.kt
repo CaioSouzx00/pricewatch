@@ -69,6 +69,12 @@ fun Application.module(
     val trackingService = PriceTrackingService(registry, productRepository, historyRepository, scrapeLogRepository, alertEvaluator)
 
     routing {
+        intercept(ApplicationCallPipeline.Plugins) {
+            if (call.request.headers[HttpHeaders.Authorization] != null) {
+                call.response.header(HttpHeaders.CacheControl, "no-store, no-cache, must-revalidate, max-age=0")
+                call.response.header(HttpHeaders.Pragma, "no-cache")
+            }
+        }
         get("/health") { call.respond(HealthResponse("ok")) }
         authRoutes(userRepository, jwtConfig)
         productRoutes(productRepository)

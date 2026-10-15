@@ -75,4 +75,17 @@ app.use(PrimeVue, {
 app.use(ToastService)
 app.use(ConfirmationService)
 
+app.config.errorHandler = (err, instance, info) => {
+    // Intercepta erros não tratados no ciclo de renderização
+    const toast = app.config.globalProperties.$toast
+    if (toast) {
+        toast.add({
+            severity: 'error',
+            summary: 'Instabilidade no Terminal',
+            detail: 'Ocorreu um erro inesperado na interface do terminal.',
+            life: 5000,
+        })
+    }
+}
+
 app.mount('#app')

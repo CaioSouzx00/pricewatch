@@ -10,6 +10,7 @@ import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
+import Paginator from 'primevue/paginator'
 
 interface AlertItem {
   id: number
@@ -29,6 +30,13 @@ const toast = useToast()
 const alerts = ref<AlertItem[]>([])
 const products = ref<Product[]>([])
 const loading = ref(true)
+const currentPage = ref(0)
+const pageSize = ref(10)
+
+const paginatedAlerts = computed(() => {
+  const start = currentPage.value * pageSize.value
+  return alerts.value.slice(start, start + pageSize.value)
+})
 
 // Create alert modal state
 const createModalOpen = ref(false)
@@ -229,7 +237,7 @@ onMounted(load)
           </tr>
         </thead>
         <tbody>
-          <tr v-for="a in alerts" :key="'alert-' + a.id" class="market-row">
+          <tr v-for="a in paginatedAlerts" :key="'alert-' + a.id" class="market-row">
             <td>
               <RouterLink :to="`/products/${a.productId}`" class="product-cell-link cursor-hover">
                 <img
@@ -286,6 +294,18 @@ onMounted(load)
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div v-if="alerts.length > pageSize" class="pagination-container">
+      <Paginator
+        :rows="pageSize"
+        :totalRecords="alerts.length"
+        :rowsPerPageOptions="[10, 20, 50]"
+        :first="currentPage * pageSize"
+        class="terminal-paginator"
+        @page="(e) => { currentPage = e.page; pageSize = e.rows; }"
+      />
     </div>
 
     <!-- Create Alert Modal with Product Selector -->
@@ -601,5 +621,13 @@ onMounted(load)
 
 .w-full {
   width: 100%;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: 0.5rem;
 }
 </style>

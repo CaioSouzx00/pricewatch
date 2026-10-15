@@ -19,10 +19,11 @@ class JwtConfig(
         .withAudience(audience)
         .build()
 
-    fun generateToken(userId: Long): String = JWT.create()
+    fun generateToken(userId: Long, role: String = "USER"): String = JWT.create()
         .withIssuer(issuer)
         .withAudience(audience)
         .withSubject(userId.toString())
+        .withClaim("role", role)
         .withExpiresAt(Date(System.currentTimeMillis() + expiresInMinutes * 60_000))
         .sign(algorithm)
 

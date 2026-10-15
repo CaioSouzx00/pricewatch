@@ -56,7 +56,7 @@ function handleLogout() {
     },
     accept: () => {
       auth.logout()
-      router.push('/login')
+      router.replace({ name: 'login' })
       toast.add({
         severity: 'info',
         summary: 'Sessão Finalizada',

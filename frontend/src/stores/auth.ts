@@ -5,6 +5,7 @@ export interface User {
   id: number
   email: string
   name: string
+  role?: string
   createdAt: string
 }
 
@@ -28,6 +29,11 @@ function logout() {
   state.token = null
   state.user = null
   localStorage.removeItem(TOKEN_KEY)
+  try {
+    sessionStorage.clear()
+  } catch {
+    // Ignora restrições de sandbox se houver
+  }
 }
 
 setUnauthorizedHandler(() => {
@@ -44,11 +50,11 @@ export const useAuth = () => ({
   user: computed(() => state.user),
 
   async login(email: string, password: string) {
-    setSession(await api<AuthResponse>('/auth/login', { body: { email, password } }))
+    setSession(await api<AuthResponse>('/auth/login', { body: { email: email.trim().toLowerCase(), password } }))
   },
 
   async register(name: string, email: string, password: string) {
-    setSession(await api<AuthResponse>('/auth/register', { body: { name, email, password } }))
+    setSession(await api<AuthResponse>('/auth/register', { body: { name: name.trim(), email: email.trim().toLowerCase(), password } }))
   },
 
   /** Restaura o usuário a partir do token salvo; limpa a sessão se o token for inválido. */
